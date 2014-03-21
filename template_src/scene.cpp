@@ -61,6 +61,12 @@ Camera::px_to_wcs(const int w, const int h)
 		translation(Vector3D(-w/2, -h/2, d));
 }
 
+int
+Camera::get_id()
+{
+	return m_cam_id;
+}
+
 Scene::Scene()
 {
 }
@@ -77,6 +83,23 @@ Scene::~Scene()
 	for (std::vector<Light*>::iterator i = m_lights.begin();
 			i != m_lights.end(); ++i)
 		delete *i;
+}
+
+
+Camera*
+Scene::get_camera(const int cam_id)
+{
+	Camera *c = 0;
+	for (std::vector<Camera*>::iterator i = m_cameras.begin();
+			i != m_cameras.end(); ++i)
+	{
+		if ((*i)->get_id() == cam_id)
+		{
+			c = *i;
+			break;
+		}
+	}
+	return c;
 }
 
 

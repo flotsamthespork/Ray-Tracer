@@ -43,6 +43,7 @@
 #include <vector>
 #include "lua488.hpp"
 #include "scene_tree.hpp"
+#include "tracer.hpp"
 
 // Uncomment the following line to enable debugging messages
 #define GRLUA_ENABLE_DEBUG
@@ -74,9 +75,16 @@ struct scene_node_ud {
 	SceneNode* node;
 };
 
+struct tracer_ud {
+	RayTracer *tracer;
+};
+
 
 #define SCENE_LIB	"scene"
 #define SCENE_META	"scene.scene"
+
+#define TRACER_LIB	"tracer"
+#define TRACER_META	"tracer.tracer"
 
 // Useful function to retrieve and check an n-tuple of numbers.
 template<typename T>
@@ -184,6 +192,36 @@ int scene_f_camera_cmd(lua_State *L)
 	const char *name = luaL_checkstring(L, 1);
 	double cam_id = luaL_checknumber(L, 2);
 	data->node = new CameraNode(name, cam_id);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+extern "C"
+int scene_f_sphere_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	int nargs = lua_gettop(L);
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char *name = (nargs >= 1 ? luaL_checkstring(L, 1) : "");
+	Point3D pos;
+	if (nargs >= 2)
+		get_tuple(L, 2, &pos[0], 3);
+
+	double radius;
+	if (nargs >= 3)
+		radius = luaL_checknumber(L, 3);
+	else
+		radius = 1;
+
+	Primitive *p = new Sphere(pos, radius);
+	data->node = new GeometryNode(name, p);
 
 	luaL_getmetatable(L, SCENE_META);
 	lua_setmetatable(L, -2);
@@ -383,6 +421,7 @@ static const luaL_reg scenelib_functions[] = {
 	{"light",	scene_f_light_cmd},
 	{"camera",	scene_f_camera_cmd},
 	// TODO - primitives
+	{"sphere",	scene_f_sphere_cmd},
 	{0, 0}
 };
 
@@ -415,6 +454,144 @@ static void make_scene_lib(lua_State *L)
 
 
 //////////////////////////////////////////////
+/////////////// Tracer Library ///////////////
+//////////////////////////////////////////////
+
+
+/////////////// Tracer Library Functions ///////////////
+
+extern "C"
+int tracer_f_new_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+
+	tracer_ud *data = (tracer_ud*)lua_newuserdata(L, sizeof(tracer_ud));
+	data->tracer = 0;
+
+	scene_node_ud *node = (scene_node_ud*)luaL_checkudata(L, 1, SCENE_META);
+	luaL_argcheck(L, node != 0, 1, "Node expected");
+
+	const char *isstr = luaL_checkstring(L, 2);
+
+	IntersectionStrategyParams params;
+
+	int len = strlen(isstr);
+	if (!isstr || len == 0)
+		luaL_argcheck(L, false, 1, "Invalid intersection strategy");
+	else if (isstr[0] == 'b')
+	{
+		if (len != 1)
+			luaL_argcheck(L, false, 1, "Brute force strategy has no options");
+		params.type = BRUTE_FORCE;
+	}
+	else
+		luaL_argcheck(L, false, 1, "Invalid intersection strategy");
+
+	IntersectionStrategy *is = get_strategy(params);
+	if (!is)
+		luaL_argcheck(L, false, 1, "Failed to generate strategy");
+
+	Scene *scene = new Scene();
+	Scene::make_scene(node->node, scene);
+
+	data->tracer = new RayTracer(scene, is);
+
+	luaL_getmetatable(L, TRACER_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+/////////////// Tracer Library Methods ///////////////
+
+
+extern "C"
+int tracer_m_gc_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	tracer_ud *me = (tracer_ud*)luaL_checkudata(L, 1, TRACER_META);
+	luaL_argcheck(L, me != 0, 1, "Ray-Tracer expected");
+
+	me->tracer = 0;
+	return 0;
+}
+
+extern "C"
+int tracer_m_set_threads_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	tracer_ud *me = (tracer_ud*)luaL_checkudata(L, 1, TRACER_META);
+	luaL_argcheck(L, me != 0, 1, "Ray-Tracer expected");
+
+	int num_threads = luaL_checkinteger(L, 2);
+	me->tracer->set_num_threads(num_threads);
+
+	return 0;
+}
+
+extern "C"
+int tracer_m_set_ambient_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	tracer_ud *me = (tracer_ud*)luaL_checkudata(L, 1, TRACER_META);
+	luaL_argcheck(L, me != 0, 1, "Ray-Tracer expected");
+
+	Colour c(0);
+	get_color(L, 2, c);
+	me->tracer->set_ambient(c);
+
+	return 0;
+}
+
+extern "C"
+int tracer_m_render_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	tracer_ud *me = (tracer_ud*)luaL_checkudata(L, 1, TRACER_META);
+	luaL_argcheck(L, me != 0, 1, "Ray-Tracer expected");
+
+	int cam_id = luaL_checkinteger(L, 2);
+	const char *img_name = luaL_checkstring(L, 3);
+	int width = luaL_checkinteger(L, 4);
+	int height = luaL_checkinteger(L, 5);
+
+	me->tracer->render(cam_id, img_name, width, height);
+	return 0;
+}
+
+
+/////////////// Make Library ///////////////
+
+
+static const luaL_reg tracerlib_functions[] = {
+	{"new",		tracer_f_new_cmd},
+	{0, 0}
+};
+
+static const luaL_reg tracerlib_methods[] = {
+	{"__gc",		tracer_m_gc_cmd},
+	{"set_threads",		tracer_m_set_threads_cmd},
+	{"set_ambient",		tracer_m_set_ambient_cmd},
+	{"render",		tracer_m_render_cmd},
+	{0, 0}
+};
+
+
+static void make_tracer_lib(lua_State *L)
+{
+	make_lib(L, TRACER_LIB, TRACER_META,
+			tracerlib_functions,
+			tracerlib_methods);
+}
+
+
+
+//////////////////////////////////////////////
 /////////////// Run Lua Script ///////////////
 //////////////////////////////////////////////
 
@@ -434,6 +611,7 @@ bool run_lua(const std::string& filename)
 	GRLUA_DEBUG("Setting up our functions");
 
 	make_scene_lib(L);
+	make_tracer_lib(L);
 
 	GRLUA_DEBUG("Parsing the scene");
 	// Now parse the actual scene

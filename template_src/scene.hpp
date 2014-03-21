@@ -58,6 +58,8 @@ public:
 	virtual ~Camera();
 
 	Matrix4x4 px_to_wcs(const int w, const int h);
+	
+	int get_id();
 
 	friend class Scene;
 };
@@ -77,6 +79,8 @@ private:
 public:
 	Scene();
 	virtual ~Scene();
+
+	Camera *get_camera(const int cam_id);
 
 	static void make_scene(SceneNode *node,
 			Scene *scene);

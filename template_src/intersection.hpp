@@ -3,6 +3,11 @@
 
 #include "scene.hpp"
 
+enum StrategyType {
+	BRUTE_FORCE,
+	REGULAR_GRID
+};
+
 
 class IntersectionCache {
 private:
@@ -42,6 +47,10 @@ public:
 	//	old_cache = swap(new_cache);
 	//	DO_STUFF();
 	//	swap(old_cache);
+};
+
+struct IntersectionStrategyParams {
+	StrategyType type;
 };
 
 class IntersectionStrategy {
@@ -99,5 +108,7 @@ public:
 protected:
 	virtual void do_add_object(SceneObject *object);
 };
+
+IntersectionStrategy *get_strategy(IntersectionStrategyParams &params);
 
 #endif

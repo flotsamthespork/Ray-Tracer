@@ -6,8 +6,6 @@
 #include "primitive.hpp"
 #include "material.hpp"
 
-class GeometryNode;
-
 enum NodeType {
 	NODE,
 	JOINT,

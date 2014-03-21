@@ -5,7 +5,7 @@
 
 class Primitive {
 public:
-  virtual ~Primitive();
+  virtual ~Primitive() {}
 };
 
 

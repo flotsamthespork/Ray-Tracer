@@ -4,6 +4,14 @@
 #include "intersection.hpp"
 
 
+IntersectionStrategy *get_strategy(IntersectionStrategyParams &params)
+{
+	if (params.type == BRUTE_FORCE)
+		return new BruteForceStrategy();
+
+	return 0;
+}
+
 //////////////////////////////////////////////////////
 //////////////////////////////////////////////////////
 ///////////////// Intersection Cache /////////////////

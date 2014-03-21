@@ -11,6 +11,8 @@ l = scene.light("l1")
 l:light_position({0,0,0})
 l:light_color({1,0,0})
 
+s = scene.sphere("", {1,0,0}, 3)
+
 
 -- 'b' for BruteForce
 rt = tracer.new(x, 'b')

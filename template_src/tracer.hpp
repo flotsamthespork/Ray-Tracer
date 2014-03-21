@@ -4,26 +4,26 @@
 #include "algebra.hpp"
 #include "image.hpp"
 #include "intersection.hpp"
-#include "scene_tree.hpp"
+#include "scene.hpp"
 
 class RayTracer {
 private:
-	const Point3D m_eye_pos;
-	const Matrix4x4 m_px_to_wcs;
-	Image *m_img;
+	Scene *m_scene;
+	IntersectionStrategy *m_intersect;
+
+	Colour m_ambient;
+	int m_num_threads;
+
+	Camera *m_camera;
 public:
-//	RayTracer(Scene *scene);
+	RayTracer(Scene *scene, IntersectionStrategy *is);
+	virtual ~RayTracer();
 
-//	void set_ambient(Colour &color);
+	void set_ambient(Colour &color);
+	void set_num_threads(const int num_threads);
 
-//	void trace_img(int cam_id,
-
-	RayTracer(const Point3D &eye_pos,
-			const Matrix4x4 &px_to_wcs,
-			SceneNode *node,
-			Image *img);
-
-	// TODO - pass in an IntersectionStrategy
+	void render(const int cam_id, const std::string img_name,
+			const int width, const int height);
 };
 
 
