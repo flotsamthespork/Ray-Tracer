@@ -40,6 +40,7 @@ private:
 	std::vector<RayTracerJob*> m_jobs;
 public:
 	JobFactory(RayTracer *rt,
+			const int num_px,
 			const int num_jobs);
 	~JobFactory();
 

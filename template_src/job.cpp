@@ -8,8 +8,8 @@
 
 RayTracerJob::RayTracerJob(JobFactory *factory,
 		const RayTracer *rt) :
-	m_tracer(rt),
 	m_factory(factory),
+	m_tracer(rt),
 	m_threaded(false)
 {
 }
@@ -32,13 +32,13 @@ void
 RayTracerJob::run()
 {
 	int px, px_f, x, y;
-	const int width = m_tracer->get_image()->width();
+//	const int width = m_tracer->get_image()->width();
 	while (m_factory->get_px(px, px_f))
 	{
 		for (; px < px_f; ++px)
 		{
-			x = px % width;
-			y = px / width;
+//			x = px % width;
+//			y = px / width;
 		}
 
 //		printf("(%d,%d)\n", x, y);
@@ -63,9 +63,9 @@ RayTracerJob::wait_for_finish()
 
 
 JobFactory::JobFactory(RayTracer *rt,
+		const int num_px,
 		const int num_jobs) :
-	m_last_px(rt->get_image()->width() *
-			rt->get_image()->height()),
+	m_last_px(num_px),
 	m_next_px(0)
 {
 	assert(num_jobs > 0);
