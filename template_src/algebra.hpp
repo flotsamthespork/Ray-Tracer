@@ -521,6 +521,19 @@ Matrix4x4 translation(const Vector3D& displacement);
 // Return a matrix to represent a nonuniform scale with the given factors.
 Matrix4x4 scaling(const Vector3D& scale);
 
+class PrimitiveObject;
+
+struct IntersectionData {
+	double t;
+	Vector3D normal;
+	PrimitiveObject *object;
+
+	bool operator<(const IntersectionData &c)
+	{
+		return t < c.t;
+	}
+};
+
 
 
 #endif // CS488_ALGEBRA_HPP

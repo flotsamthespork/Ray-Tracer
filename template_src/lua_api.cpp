@@ -44,9 +44,11 @@
 #include "lua488.hpp"
 #include "scene_tree.hpp"
 #include "tracer.hpp"
+#include "colormap.hpp"
+#include "material.hpp"
 
 // Uncomment the following line to enable debugging messages
-#define GRLUA_ENABLE_DEBUG
+//#define GRLUA_ENABLE_DEBUG
 
 #ifdef GRLUA_ENABLE_DEBUG
 #	define GRLUA_DEBUG(x) do { std::cerr << x << std::endl; } while (0)
@@ -79,12 +81,26 @@ struct tracer_ud {
 	RayTracer *tracer;
 };
 
+struct color_ud {
+	ColorMap *color;
+};
+
+struct material_ud {
+	Material *mat;
+};
+
 
 #define SCENE_LIB	"scene"
 #define SCENE_META	"scene.scene"
 
 #define TRACER_LIB	"tracer"
 #define TRACER_META	"tracer.tracer"
+
+#define COLOR_LIB	"color"
+#define COLOR_META	"color.color"
+
+#define MATERIAL_LIB	"material"
+#define MATERIAL_META	"material.material"
 
 // Useful function to retrieve and check an n-tuple of numbers.
 template<typename T>
@@ -315,6 +331,23 @@ int scene_m_add_child_cmd(lua_State *L)
 	return 0;
 }
 
+extern "C"
+int scene_m_set_material_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	scene_node_ud *me = (scene_node_ud*)luaL_checkudata(L, 1, SCENE_META);
+	luaL_argcheck(L, me != 0, 1, "Geometry expected");
+	luaL_argcheck(L, me->node->get_type() == GEOMETRY, 1, "Geometry expected");
+
+	GeometryNode *node = (GeometryNode*) me->node;
+
+	material_ud *mat = (material_ud*)luaL_checkudata(L, 2, MATERIAL_META);
+	luaL_argcheck(L, mat != 0, 1, "Material expected");
+
+	node->material = mat->mat;
+	return 0;
+}
 
 static LightNode *get_light_node(lua_State *L)
 {
@@ -432,6 +465,7 @@ static const luaL_reg scenelib_methods[] = {
 	{"scale",		scene_m_scale_cmd},
 	{"rotate",		scene_m_rotate_cmd},
 	{"add_child",		scene_m_add_child_cmd},
+	{"set_material",	scene_m_set_material_cmd},
 	// Light Node
 	{"light_color",		scene_m_light_color_cmd},
 	{"light_position",	scene_m_light_pos_cmd},
@@ -589,6 +623,144 @@ static void make_tracer_lib(lua_State *L)
 			tracerlib_methods);
 }
 
+//////////////////////////////////////////////
+/////////////// Colour Library ///////////////
+//////////////////////////////////////////////
+
+
+/////////////// Color Library Functions ///////////////
+
+extern "C"
+int color_f_constant_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	color_ud *data = (color_ud*)lua_newuserdata(L, sizeof(color_ud));
+	data->color = 0;
+
+	Colour c(0);
+	get_color(L, 1, c);
+
+	data->color = new ConstantColorMap(c);
+
+	luaL_getmetatable(L, COLOR_META);
+	lua_setmetatable(L, -2);
+	return 1;
+}
+
+/////////////// Color Library Methods ///////////////
+
+
+extern "C"
+int color_m_gc_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	color_ud *me = (color_ud*)luaL_checkudata(L, 1, COLOR_META);
+	luaL_argcheck(L, me != 0, 1, "Color expected");
+
+	me->color = 0;
+	return 0;
+}
+
+
+/////////////// Make Library ///////////////
+
+
+static const luaL_reg colorlib_functions[] = {
+	{"constant",	color_f_constant_cmd},
+	// TODO - texture
+	{0, 0}
+};
+
+static const luaL_reg colorlib_methods[] = {
+	{"__gc",		color_m_gc_cmd},
+	{0, 0}
+};
+
+
+static void make_color_lib(lua_State *L)
+{
+	make_lib(L, COLOR_LIB, COLOR_META,
+			colorlib_functions,
+			colorlib_methods);
+}
+
+
+////////////////////////////////////////////////
+/////////////// Material Library ///////////////
+////////////////////////////////////////////////
+
+
+/////////////// Material Library Functions ///////////////
+
+extern "C"
+int material_f_new_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *data = (material_ud*)lua_newuserdata(L, sizeof(material_ud));
+	data->mat = 0;
+
+	data->mat = new Material();
+
+	luaL_getmetatable(L, MATERIAL_META);
+	lua_setmetatable(L, -2);
+	return 1;
+}
+
+/////////////// Material Library Methods ///////////////
+
+
+extern "C"
+int material_m_gc_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *me = (material_ud*)luaL_checkudata(L, 1, MATERIAL_META);
+	luaL_argcheck(L, me != 0, 1, "Material expected");
+
+	me->mat = 0;
+	return 0;
+}
+
+extern "C"
+int material_m_set_diffuse_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *me = (material_ud*)luaL_checkudata(L, 1, MATERIAL_META);
+	luaL_argcheck(L, me != 0, 1, "Material expected");
+
+	color_ud *color = (color_ud*)luaL_checkudata(L, 2, COLOR_META);
+	luaL_argcheck(L, color != 0, 1, "Color expected");
+
+	me->mat->set_diffuse(color->color);
+	return 0;
+}
+
+
+/////////////// Make Library ///////////////
+
+
+static const luaL_reg materiallib_functions[] = {
+	{"new",		material_f_new_cmd},
+	{0, 0}
+};
+
+static const luaL_reg materiallib_methods[] = {
+	{"__gc",		material_m_gc_cmd},
+	{"set_diffuse",		material_m_set_diffuse_cmd},
+	{0, 0}
+};
+
+
+static void make_material_lib(lua_State *L)
+{
+	make_lib(L, MATERIAL_LIB, MATERIAL_META,
+			materiallib_functions,
+			materiallib_methods);
+}
 
 
 //////////////////////////////////////////////
@@ -612,6 +784,8 @@ bool run_lua(const std::string& filename)
 
 	make_scene_lib(L);
 	make_tracer_lib(L);
+	make_color_lib(L);
+	make_material_lib(L);
 
 	GRLUA_DEBUG("Parsing the scene");
 	// Now parse the actual scene

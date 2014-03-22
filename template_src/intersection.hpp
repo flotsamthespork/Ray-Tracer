@@ -2,6 +2,10 @@
 #define __INTERSECTION_H__
 
 #include "scene.hpp"
+#include "ray.hpp"
+
+class Material;
+class Primitive;
 
 enum StrategyType {
 	BRUTE_FORCE,
@@ -34,14 +38,23 @@ class Intersection {
 private:
 	// TODO - woof woof woof
 	// TODO - all the necessary variables.
+
+	// TODO - UV coordinates, which cache the first time they
+	//	  are calculated
 	bool m_found;
+
+	IntersectionData m_intersection;
 
 	IntersectionCache *m_cache;
 public:
 	Intersection(IntersectionCache *cache);
 
-	bool get_intersection(void *ray, SceneObject *object);
+	bool intersects() const;
+
+	void get_intersection(const Ray *ray, SceneObject *object);
 	IntersectionCache *swap_cache(IntersectionCache *cache);
+
+	void update_intersection(IntersectionData &i);
 
 	// TODO - for caches,
 	//	old_cache = swap(new_cache);
@@ -64,8 +77,7 @@ public:
 		return 0;
 	}
 
-	// TODO - classes for ray and intersection
-	virtual bool get_intersection(void *ray, Intersection *intersection) = 0;
+	virtual void get_intersection(const Ray *ray, Intersection *intersection) = 0;
 
 	// TODO - Not sure if this is actually necessary...
 	// it may be(?)
@@ -92,7 +104,7 @@ class SpatialSubdivisionStrategy : public IntersectionStrategy {
 public:
 	virtual IntersectionCache *create_intersection_cache();
 
-	virtual bool get_intersection(void *ray, Intersection *intersection);
+	virtual void get_intersection(const Ray *ray, Intersection *intersection);
 
 protected:
 	virtual void do_add_object(SceneObject *object);
@@ -104,7 +116,7 @@ class BruteForceStrategy : public IntersectionStrategy {
 private:
 	std::vector<SceneObject*> m_objects;
 public:
-	virtual bool get_intersection(void *ray, Intersection *intersection);
+	virtual void get_intersection(const Ray *ray, Intersection *intersection);
 protected:
 	virtual void do_add_object(SceneObject *object);
 };

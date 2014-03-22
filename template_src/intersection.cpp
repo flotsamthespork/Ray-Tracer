@@ -12,10 +12,10 @@ IntersectionStrategy *get_strategy(IntersectionStrategyParams &params)
 	return 0;
 }
 
-//////////////////////////////////////////////////////
-//////////////////////////////////////////////////////
-///////////////// Intersection Cache /////////////////
-//////////////////////////////////////////////////////
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+///////////////// Intersection /////////////////
+////////////////////////////////////////////////
 
 
 Intersection::Intersection(IntersectionCache *cache) :
@@ -28,15 +28,35 @@ Intersection::Intersection(IntersectionCache *cache) :
 }
 
 
-bool
-Intersection::get_intersection(void *ray,
+void
+Intersection::get_intersection(const Ray *ray,
 		SceneObject *object)
 {
 	if (!m_cache || m_cache->test_id(object->get_id()))
 	{
-		// TODO - CHECK THIS SHIT, YO
+//		Ray new_ray;
+//		Primitive *o = object->get_primitive();
+//		ray->transform(object->get_itransform(), new_ray);
+
+//		o->
+		object->intersection(ray, this);
 	}
-	return false;
+}
+
+void
+Intersection::update_intersection(IntersectionData &i)
+{
+	if (i.t > 0.00000001 && (!m_found || i.t < m_intersection.t))
+	{
+		m_found = true;
+		m_intersection = i;
+	}
+}
+
+bool
+Intersection::intersects() const
+{
+	return m_found;
 }
 
 
@@ -142,12 +162,11 @@ SpatialSubdivisionStrategy::create_intersection_cache()
 }
 
 
-bool
-SpatialSubdivisionStrategy::get_intersection(void *ray,
+void
+SpatialSubdivisionStrategy::get_intersection(const Ray *ray,
 		Intersection *intersection)
 {
 	// TODO - use the grid regions to find a nice intersection..
-	return false;
 }
 
 
@@ -165,11 +184,15 @@ SpatialSubdivisionStrategy::do_add_object(SceneObject *object)
 ///////////////////////////////////////////////
 
 
-bool
-BruteForceStrategy::get_intersection(void *ray, Intersection *intersection)
+void
+BruteForceStrategy::get_intersection(const Ray *ray, Intersection *intersection)
 {
-	// TODO - search for a god damn intersection brute forcedly
-	return false;
+	for (std::vector<SceneObject*>::iterator i = m_objects.begin();
+			i != m_objects.end(); ++i)
+	{
+		intersection->get_intersection(ray, *i);
+	}
+	// TODO - potentially a way to break out of the loop early
 }
 
 void

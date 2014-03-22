@@ -10,6 +10,7 @@ enum NodeType {
 	NODE,
 	JOINT,
 	GEOMETRY,
+	CSG,
 	LIGHT,
 	CAMERA
 };

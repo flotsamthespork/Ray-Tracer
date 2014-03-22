@@ -1,23 +1,59 @@
 
 
-x = scene.node("haha")
-y = scene.node("haha")
-x:translate({0,1,2})
-x:scale({0,1,2})
-x:rotate('x', 12)
-x:add_child(y)
+spec1 = color.constant({0.5, 0.7, 0.5})
+spec2 = color.constant({0.5, 0.4, 0.8})
 
-l = scene.light("l1")
-l:light_position({0,0,0})
-l:light_color({1,0,0})
+diff1 = color.constant({0.7, 1.0, 0.7})
+diff2 = color.constant({0.5, 0.5, 0.5})
+diff3 = color.constant({1.0, 0.6, 0.1})
+diff4 = color.constant({0.7, 0.6, 1.0})
 
-s = scene.sphere("", {1,0,0}, 3)
+mat1 = material.new()
+mat1:set_diffuse(diff1)
+-- TODO - specular
 
+mat2 = material.new()
+mat2:set_diffuse(diff2)
+
+mat3 = material.new()
+mat3:set_diffuse(diff3)
+
+mat4 = material.new()
+mat4:set_diffuse(diff4)
+
+scene_root = scene.node("root")
+
+s1 = scene.sphere("s1", {0, 0, -400}, 100)
+scene_root:add_child(s1)
+s1:set_material(mat1)
+
+s2 = scene.sphere("s2", {200, 50, -100}, 150)
+scene_root:add_child(s2)
+s2:set_material(mat1)
+
+s3 = scene.sphere("s3", {0, -1200, -500}, 1000)
+scene_root:add_child(s3)
+s3:set_material(mat2)
+
+s4 = scene.sphere("s4", {-100, 25, -300}, 50)
+scene_root:add_child(s4)
+s4:set_material(mat3)
+
+s5 = scene.sphere("s5", {0, 100, -250}, 25)
+scene_root:add_child(s5)
+s5:set_material(mat4)
+
+cam1 = scene.camera("cam1", 1)
+scene_root:add_child(cam1)
+cam1:cam_position({0, 0, 800}, false)
+cam1:cam_up({0, 1, 0}, false)
+cam1:cam_view({0, 0, -1}, false)
+cam1:cam_fov(50)
 
 -- 'b' for BruteForce
-rt = tracer.new(x, 'b')
+rt = tracer.new(scene_root, 'b')
 rt:set_threads(1)
-rt:set_ambient({0.1, 0.1, 0.1})
+rt:set_ambient({0.3, 0.3, 0.3})
 
 -- Camera ID, Output, width, height
 rt:render(1, "test.png", 256, 256)

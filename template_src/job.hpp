@@ -2,6 +2,7 @@
 #define __JOB_H__
 
 #include "tracer.hpp"
+#include "intersection.hpp"
 #include <vector>
 #include <pthread.h>
 
@@ -11,12 +12,12 @@ class JobFactory;
 class RayTracerJob {
 private:
 	JobFactory *const m_factory;
-	const RayTracer *const m_tracer;
+	RayTracer *const m_tracer;
 	bool m_threaded;
 	pthread_t m_thread;
+	IntersectionCache *m_cache;
 public:
-	RayTracerJob(JobFactory *factory,
-			const RayTracer *rt);
+	RayTracerJob(JobFactory *factory, RayTracer *rt);
 	~RayTracerJob();
 
 	void run_threaded();

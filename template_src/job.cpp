@@ -6,17 +6,19 @@
 #include "job.hpp"
 
 
-RayTracerJob::RayTracerJob(JobFactory *factory,
-		const RayTracer *rt) :
+RayTracerJob::RayTracerJob(JobFactory *factory, RayTracer *rt) :
 	m_factory(factory),
 	m_tracer(rt),
-	m_threaded(false)
+	m_threaded(false),
+	m_cache(rt->get_intersection_strategy()->create_intersection_cache())
 {
 }
 
 
 RayTracerJob::~RayTracerJob()
 {
+	if (m_cache)
+		delete m_cache;
 }
 
 
@@ -32,16 +34,12 @@ void
 RayTracerJob::run()
 {
 	int px, px_f, x, y;
-//	const int width = m_tracer->get_image()->width();
 	while (m_factory->get_px(px, px_f))
 	{
 		for (; px < px_f; ++px)
 		{
-//			x = px % width;
-//			y = px / width;
+			m_tracer->trace_px(px, m_cache);
 		}
-
-//		printf("(%d,%d)\n", x, y);
 	}
 }
 
