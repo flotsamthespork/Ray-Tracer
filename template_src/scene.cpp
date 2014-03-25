@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <iostream>
 #include "ray.hpp"
 #include "intersection.hpp"
@@ -28,13 +29,24 @@ SceneObject::get_id()
 void
 SceneObject::intersection(const Ray *ray, Intersection *i)
 {
-	std::list<IntersectionData> intersections;
-	intersection(ray, intersections);
+//	std::vector<IntersectionData> intersections;
+	i->m_vec->resize(0);
+	intersection(ray, *i->m_vec);
 	// TODO
 
-	if (intersections.size() > 0)
+	std::sort(i->m_vec->begin(), i->m_vec->end());
+
+	if (i->m_vec->size() > 0)
 	{
-		i->update_intersection(intersections.front());
+		for (std::vector<IntersectionData>::iterator it = i->m_vec->begin();
+				it != i->m_vec->end(); ++it)
+		{
+			if (it->t > i->m_eps)
+			{
+				i->update_intersection(*it);
+				break;
+			}
+		}
 	}
 }
 
@@ -54,15 +66,20 @@ PrimitiveObject::~PrimitiveObject()
 
 void
 PrimitiveObject::intersection(const Ray *ray,
-		std::list<IntersectionData> &intersections)
+		std::vector<IntersectionData> &intersections)
 {
 	Ray new_ray;
 	ray->transform(m_itrans, new_ray);
 
 	m_prim->intersection(&new_ray, intersections);
-	intersections.sort();
 
-	// TODO - fix normals
+	for (std::vector<IntersectionData>::iterator i = intersections.begin();
+			i != intersections.end(); ++i)
+	{
+		i->object = this;
+		i->normal = m_itrans.transpose() * i->normal;
+		i->u_tangent = m_itrans.transpose() * i->normal;
+	}
 }
 
 CsgObject::CsgObject(const int id,
@@ -81,18 +98,34 @@ CsgObject::~CsgObject()
 
 void
 CsgObject::intersection(const Ray *ray,
-		std::list<IntersectionData> &intersections)
+		std::vector<IntersectionData> &intersections)
 {
 	Ray new_ray;
 	ray->transform(m_itrans, new_ray);
 
-	std::list<IntersectionData> left_i;
-	std::list<IntersectionData> right_i;
+	std::vector<IntersectionData> left_i;
+	std::vector<IntersectionData> right_i;
 
 	m_left->intersection(&new_ray, left_i);
 	m_right->intersection(&new_ray, right_i);
 
-	// TODO - get the intersection data from each of these dealios
+	// TODO - merge based on the CSG operator
+
+	for (std::vector<IntersectionData>::iterator i = intersections.begin();
+			i != intersections.end(); ++i)
+	{
+		i->normal = m_itrans.transpose() * i->normal;
+		i->u_tangent = m_itrans.transpose() * i->normal;
+	}
+}
+
+Light::Light(LightNode *node) :
+	color(node->color),
+	position(node->get_transform()*node->position)
+{
+	falloff[0] = node->falloff[0];
+	falloff[1] = node->falloff[1];
+	falloff[2] = node->falloff[2];
 }
 
 
@@ -188,6 +221,17 @@ Scene::fill(IntersectionStrategy *is)
 	}
 }
 
+int
+Scene::get_light_count()
+{
+	return m_lights.size();
+}
+
+Light*
+Scene::get_light(int i)
+{
+	return m_lights[i];
+}
 
 void
 Scene::make_scene(SceneNode *node,
@@ -217,9 +261,11 @@ Scene::make_scene(SceneNode *node,
 		CameraNode *c = (CameraNode*) node;
 		scene->m_cameras.push_back(new Camera(c));
 	}
+		break;
 	case LIGHT:
 	{
-		// TODO
+		LightNode *l = (LightNode*) node;
+		scene->m_lights.push_back(new Light(l));
 	}
 		break;
 	default: break;

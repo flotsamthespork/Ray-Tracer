@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cassert>
+#include <unistd.h>
 
 #include "job.hpp"
 
@@ -9,24 +10,39 @@
 RayTracerJob::RayTracerJob(JobFactory *factory, RayTracer *rt) :
 	m_factory(factory),
 	m_tracer(rt),
-	m_threaded(false),
-	m_cache(rt->get_intersection_strategy()->create_intersection_cache())
+	m_threaded(false)
 {
+	m_data.cache = rt->get_intersection_strategy()->create_intersection_cache();
 }
 
 
 RayTracerJob::~RayTracerJob()
 {
-	if (m_cache)
-		delete m_cache;
+	if (m_data.cache)
+		delete m_data.cache;
 }
 
+static void
+set_core(int core, pthread_attr_t *attr)
+{
+	int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+	core = core % num_cores;
+
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(core, &cpuset);
+
+	pthread_attr_setaffinity_np(attr, sizeof(cpuset), &cpuset);
+}
 
 void
-RayTracerJob::run_threaded()
+RayTracerJob::run_threaded(int i)
 {
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
 	m_threaded = true;
-	pthread_create(&m_thread, NULL,
+	set_core(i, &attr);
+	pthread_create(&m_thread, &attr,
 			&RayTracerJob::_run, this);
 }
 
@@ -38,7 +54,7 @@ RayTracerJob::run()
 	{
 		for (; px < px_f; ++px)
 		{
-			m_tracer->trace_px(px, m_cache);
+			m_tracer->trace_px(px, &m_data);
 		}
 	}
 }
@@ -91,12 +107,11 @@ JobFactory::run()
 	}
 	else
 	{
-		for (std::vector<RayTracerJob*>::iterator i = m_jobs.begin();
-				i != m_jobs.end(); ++i)
-			(*i)->run_threaded();
-		for (std::vector<RayTracerJob*>::iterator i = m_jobs.begin();
-				i != m_jobs.end(); ++i)
-			(*i)->wait_for_finish();
+		const int n = m_jobs.size();
+		for (int i = 0; i < n; ++i)
+			m_jobs[i]->run_threaded(i);
+		for (int i = 0; i < n; ++i)
+			m_jobs[i]->wait_for_finish();
 	}
 }
 

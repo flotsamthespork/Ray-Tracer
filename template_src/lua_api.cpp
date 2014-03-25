@@ -245,6 +245,38 @@ int scene_f_sphere_cmd(lua_State *L)
 	return 1;
 }
 
+extern "C"
+int scene_f_torus_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	int nargs = lua_gettop(L);
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char *name = (nargs >= 1 ? luaL_checkstring(L, 1) : "");
+	double outer_rad;
+	if (nargs >= 2)
+		outer_rad = luaL_checknumber(L, 2);
+	else
+		outer_rad = 1;
+
+	double inner_rad;
+	if (nargs >= 3)
+		inner_rad = luaL_checknumber(L, 3);
+	else
+		inner_rad = 1;
+
+	Primitive *p = new Torus(inner_rad, outer_rad);
+	data->node = new GeometryNode(name, p);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
 
 /////////////// Scene Library Methods ///////////////
 
@@ -455,6 +487,7 @@ static const luaL_reg scenelib_functions[] = {
 	{"camera",	scene_f_camera_cmd},
 	// TODO - primitives
 	{"sphere",	scene_f_sphere_cmd},
+	{"torus",	scene_f_torus_cmd},
 	{0, 0}
 };
 
@@ -648,6 +681,23 @@ int color_f_constant_cmd(lua_State *L)
 	return 1;
 }
 
+extern "C"
+int color_f_texture_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	color_ud *data = (color_ud*)lua_newuserdata(L, sizeof(color_ud));
+	data->color = 0;
+
+	std::string name = luaL_checkstring(L, 1);
+
+	data->color = new TextureColorMap(name);
+
+	luaL_getmetatable(L, COLOR_META);
+	lua_setmetatable(L, -2);
+	return 1;
+}
+
 /////////////// Color Library Methods ///////////////
 
 
@@ -663,18 +713,72 @@ int color_m_gc_cmd(lua_State *L)
 	return 0;
 }
 
+static TextureColorMap*
+get_texture_map(lua_State *L)
+{
+	color_ud *me = (color_ud*)luaL_checkudata(L, 1, COLOR_META);
+	luaL_argcheck(L, me != 0, 1, "Texture expected");
+	luaL_argcheck(L, me->color->get_type() == TEXTURE, 1, "Texture expected");
+
+	return (TextureColorMap*)me->color;
+}
+
+extern "C"
+int color_m_translate_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	double x, y;
+	TextureColorMap *c = get_texture_map(L);
+	x = luaL_checknumber(L,2);
+	y = luaL_checknumber(L,3);
+
+	c->translate(x, y);
+	return 0;
+}
+
+extern "C"
+int color_m_scale_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	double x, y;
+	TextureColorMap *c = get_texture_map(L);
+	x = luaL_checknumber(L,2);
+	y = luaL_checknumber(L,3);
+
+	c->scale(x,y);
+	return 0;
+}
+
+extern "C"
+int color_m_rotate_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	TextureColorMap *c = get_texture_map(L);
+	double angle = luaL_checknumber(L,2);
+
+	c->rotate(angle);
+	return 0;
+}
+
 
 /////////////// Make Library ///////////////
 
 
 static const luaL_reg colorlib_functions[] = {
 	{"constant",	color_f_constant_cmd},
-	// TODO - texture
+	{"texture",	color_f_texture_cmd},
 	{0, 0}
 };
 
 static const luaL_reg colorlib_methods[] = {
 	{"__gc",		color_m_gc_cmd},
+	{"translate",		color_m_translate_cmd},
+	{"scale",		color_m_scale_cmd},
+	{"rotate",		color_m_rotate_cmd},
+	// TODO - texture transform commands
 	{0, 0}
 };
 
@@ -739,6 +843,22 @@ int material_m_set_diffuse_cmd(lua_State *L)
 	return 0;
 }
 
+extern "C"
+int material_m_set_bump_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *me = (material_ud*)luaL_checkudata(L, 1, MATERIAL_META);
+	luaL_argcheck(L, me != 0, 1, "Material expected");
+
+	color_ud *color = (color_ud*)luaL_checkudata(L, 2, COLOR_META);
+	luaL_argcheck(L, color != 0, 1, "Color expected");
+
+	me->mat->set_bump(color->color);
+	return 0;
+}
+
+
 
 /////////////// Make Library ///////////////
 
@@ -751,6 +871,7 @@ static const luaL_reg materiallib_functions[] = {
 static const luaL_reg materiallib_methods[] = {
 	{"__gc",		material_m_gc_cmd},
 	{"set_diffuse",		material_m_set_diffuse_cmd},
+	{"set_bump",		material_m_set_bump_cmd},
 	{0, 0}
 };
 

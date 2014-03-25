@@ -526,9 +526,11 @@ class PrimitiveObject;
 struct IntersectionData {
 	double t;
 	Vector3D normal;
+	Vector3D u_tangent;
+	double uv[2];
 	PrimitiveObject *object;
 
-	bool operator<(const IntersectionData &c)
+	bool operator<(const IntersectionData &c) const
 	{
 		return t < c.t;
 	}

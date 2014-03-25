@@ -1,5 +1,6 @@
 
 #include <vector>
+#include "job.hpp"
 
 #include "intersection.hpp"
 
@@ -18,9 +19,12 @@ IntersectionStrategy *get_strategy(IntersectionStrategyParams &params)
 ////////////////////////////////////////////////
 
 
-Intersection::Intersection(IntersectionCache *cache) :
+Intersection::Intersection(JobData *data,
+		double eps) :
 	m_found(false),
-	m_cache(cache)
+	m_cache(data->cache),
+	m_vec(&data->intersections),
+	m_eps(eps)
 {
 	if (m_cache)
 		m_cache->increment_cache_version();
@@ -46,11 +50,17 @@ Intersection::get_intersection(const Ray *ray,
 void
 Intersection::update_intersection(IntersectionData &i)
 {
-	if (i.t > 0.00000001 && (!m_found || i.t < m_intersection.t))
+	if (i.t > m_eps && (!m_found || i.t < m_intersection.t))
 	{
 		m_found = true;
 		m_intersection = i;
 	}
+}
+
+IntersectionData&
+Intersection::get_data()
+{
+	return m_intersection;
 }
 
 bool

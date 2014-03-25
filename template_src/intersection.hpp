@@ -1,11 +1,13 @@
 #ifndef __INTERSECTION_H__
 #define __INTERSECTION_H__
 
+#include <vector>
 #include "scene.hpp"
 #include "ray.hpp"
 
 class Material;
 class Primitive;
+struct JobData;
 
 enum StrategyType {
 	BRUTE_FORCE,
@@ -47,7 +49,11 @@ private:
 
 	IntersectionCache *m_cache;
 public:
-	Intersection(IntersectionCache *cache);
+	std::vector<IntersectionData> *m_vec;
+	const double m_eps;
+
+	Intersection(JobData *data,
+			double eps = 0.000001);
 
 	bool intersects() const;
 
@@ -55,6 +61,8 @@ public:
 	IntersectionCache *swap_cache(IntersectionCache *cache);
 
 	void update_intersection(IntersectionData &i);
+
+	IntersectionData &get_data();
 
 	// TODO - for caches,
 	//	old_cache = swap(new_cache);

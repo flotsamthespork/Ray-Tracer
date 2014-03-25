@@ -3,10 +3,16 @@
 
 #include "tracer.hpp"
 #include "intersection.hpp"
+#include "algebra.hpp"
 #include <vector>
 #include <pthread.h>
 
 class JobFactory;
+
+struct JobData {
+	std::vector<IntersectionData> intersections;
+	IntersectionCache *cache;
+};
 
 // Specifies a specific job
 class RayTracerJob {
@@ -15,12 +21,12 @@ private:
 	RayTracer *const m_tracer;
 	bool m_threaded;
 	pthread_t m_thread;
-	IntersectionCache *m_cache;
+	JobData m_data;
 public:
 	RayTracerJob(JobFactory *factory, RayTracer *rt);
 	~RayTracerJob();
 
-	void run_threaded();
+	void run_threaded(int i);
 	void run();
 	void wait_for_finish();
 

@@ -1,7 +1,6 @@
 #ifndef __SCENE_H__
 #define __SCENE_H__
 
-#include <list>
 #include <vector>
 
 #include "algebra.hpp"
@@ -26,7 +25,7 @@ protected:
 			const Matrix4x4 &trans);
 
 	virtual void intersection(const Ray *ray,
-			std::list<IntersectionData> &intersections) = 0;
+			std::vector<IntersectionData> &intersections) = 0;
 
 public:
 	virtual ~SceneObject();
@@ -49,9 +48,19 @@ protected:
 			Material *material);
 
 	virtual void intersection(const Ray *ray,
-			std::list<IntersectionData> &intersections);
+			std::vector<IntersectionData> &intersections);
 public:
 	virtual ~PrimitiveObject();
+
+	Primitive *get_primitive()
+	{
+		return m_prim;
+	}
+
+	Material *get_material()
+	{
+		return m_material;
+	}
 
 	friend class Scene;
 };
@@ -68,7 +77,7 @@ protected:
 			SceneObject *right);
 
 	virtual void intersection(const Ray *ray,
-			std::list<IntersectionData> &intersections);
+			std::vector<IntersectionData> &intersections);
 public:
 	virtual ~CsgObject();
 
@@ -80,7 +89,12 @@ class Light {
 private:
 	// TODO - light position
 	// TODO - other light parameters
+protected:
+	Light(LightNode *node);
 public:
+	const Colour color;
+	const Point3D position;
+	double falloff[3];
 
 	friend class Scene;
 };
@@ -125,6 +139,9 @@ public:
 	void fill(IntersectionStrategy *is);
 
 	Camera *get_camera(const int cam_id);
+
+	int get_light_count();
+	Light *get_light(int i);
 
 	static void make_scene(SceneNode *node,
 			Scene *scene);

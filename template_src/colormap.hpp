@@ -1,7 +1,9 @@
 #ifndef __COLORMAP_H__
 #define __COLORMAP_H__
 
+
 #include "algebra.hpp"
+#include "image.hpp"
 
 enum ColorMapType {
 	CONSTANT,
@@ -12,7 +14,11 @@ class ColorMap {
 private:
 
 public:
-	virtual Colour& get_color(double u, double v) = 0;
+	virtual Colour get_color(double *uv) = 0;
+
+	virtual void bump(Vector3D &normal, Vector3D u_tangent, double *uv)
+	{
+	}
 
 	virtual bool compute_uv()
 	{
@@ -29,7 +35,7 @@ private:
 public:
 	ConstantColorMap(const Colour &c);
 
-	virtual Colour& get_color(double,double)
+	virtual Colour get_color(double*)
 	{
 		return m_color;
 	}
@@ -39,6 +45,49 @@ public:
 		return CONSTANT;
 	}
 
+};
+
+enum BlendMode {
+	INTERPOLATE,
+	NEAREST
+};
+
+enum WrapMode {
+	REPEAT
+};
+
+class TextureColorMap : public ColorMap {
+private:
+	BlendMode m_blend;
+	WrapMode m_wrap;
+	Matrix4x4 m_transform;
+	Image *m_img;
+	int m_width, m_height;
+
+	Colour get_color(const int x,
+			const int y,
+			const bool red_only = false);
+public:
+	TextureColorMap(std::string &name);
+	virtual ~TextureColorMap();
+
+	virtual void bump(Vector3D &normal, Vector3D u_tangent, double *uv);
+
+	void translate(double x, double y);
+	void scale(double x, double y);
+	void rotate(double angle);
+
+	virtual Colour get_color(double *uv);
+
+	virtual ColorMapType get_type()
+	{
+		return TEXTURE;
+	}
+
+	virtual bool compute_uv()
+	{
+		return true;
+	}
 };
 
 // TODO - TextureColorMap

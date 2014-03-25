@@ -6,6 +6,8 @@
 #include "intersection.hpp"
 #include "scene.hpp"
 
+struct JobData;
+
 class RayTracer {
 private:
 	Scene *m_scene;
@@ -21,7 +23,7 @@ private:
 	Matrix4x4 m_px_to_wcs;
 
 	bool ray(const Ray *ray, Colour &ray_color,
-			IntersectionCache *cache);
+			JobData *data);
 public:
 	RayTracer(Scene *scene, IntersectionStrategy *is);
 	virtual ~RayTracer();
@@ -35,8 +37,10 @@ public:
 			const int width, const int height);
 
 	void trace_px(const int px,
-			IntersectionCache *cache);
+			JobData *data);
 
+	Colour light(const Ray *ray, IntersectionData &i,
+			JobData *data);
 };
 
 
