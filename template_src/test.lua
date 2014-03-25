@@ -51,10 +51,23 @@ s5 = scene.sphere("s5", {0, 100, -250}, 25)
 s5:set_material(mat4)
 
 t1 = scene.torus("t1", 100, 25)
-scene_root:add_child(t1)
+--scene_root:add_child(t1)
 t1:translate({0,0, 300})
 --t1:rotate('y', 0.05)
 t1:set_material(mat2)
+
+csg_s1 = scene.sphere("csg_s1", {-200, 0, 0}, 100)
+csg_s1:set_material(mat2)
+
+csg_s2 = scene.torus("csg_s2", 100, 67)
+csg_s2:translate({-200, 0, 0})
+csg_s2:rotate('x', 90)
+csg_s2:rotate('y', 4)
+csg_s2:set_material(mat3)
+
+csg = scene.csg("csg1", 'd', csg_s1, csg_s2)
+scene_root:add_child(csg)
+csg:rotate('y', -45)
 
 white_light = scene.light("white_light");
 scene_root:add_child(white_light)
@@ -88,4 +101,5 @@ for i=0,100 do
 	rt:render(1, "test"..i..".png", 500, 500)
 
 	t1:rotate('y', 3)
+	csg:rotate('y', 5)
 end

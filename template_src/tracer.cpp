@@ -87,9 +87,6 @@ RayTracer::trace_px(const int px,
 	const int x = px % m_img_width;
 	const int y = px / m_img_width;
 
-	if (y == 139 && (x == 250 || x == 267))
-		std::cout << "WOOF" << std::endl;
-
 	// TODO - background color
 	Colour ray_color(0);
 

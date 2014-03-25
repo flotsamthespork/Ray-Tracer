@@ -15,6 +15,12 @@ enum NodeType {
 	CAMERA
 };
 
+enum CsgOp {
+	UNION,
+	INTERSECTION,
+	DIFFERENCE
+};
+
 class SceneNode {
 public:
 	SceneNode(const std::string& name);
@@ -115,6 +121,30 @@ public:
 	virtual ~LightNode();
 
 	virtual NodeType get_type() const;
+};
+
+class CsgNode : public SceneNode {
+public:
+	const CsgOp m_op;
+	SceneNode *const m_left;
+	SceneNode *const m_right;
+
+	CsgNode(const std::string &name, CsgOp op, SceneNode *l, SceneNode *r) :
+		SceneNode(name),
+		m_op(op),
+		m_left(l),
+		m_right(r)
+	{
+	}
+
+	virtual ~CsgNode()
+	{
+	}
+
+	virtual NodeType get_type() const
+	{
+		return CSG;
+	}
 };
 
 

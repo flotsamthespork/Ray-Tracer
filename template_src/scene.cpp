@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <float.h>
 #include <iostream>
 #include "ray.hpp"
 #include "intersection.hpp"
@@ -84,9 +85,11 @@ PrimitiveObject::intersection(const Ray *ray,
 
 CsgObject::CsgObject(const int id,
 			const Matrix4x4 &trans,
+			CsgOp op,
 			SceneObject *left,
 			SceneObject *right) :
 	SceneObject(id, trans),
+	m_op(op),
 	m_left(left),
 	m_right(right)
 {
@@ -94,6 +97,10 @@ CsgObject::CsgObject(const int id,
 
 CsgObject::~CsgObject()
 {
+	if (m_left)
+		delete m_left;
+	if (m_right)
+		delete m_right;
 }
 
 void
@@ -106,8 +113,62 @@ CsgObject::intersection(const Ray *ray,
 	std::vector<IntersectionData> left_i;
 	std::vector<IntersectionData> right_i;
 
-	m_left->intersection(&new_ray, left_i);
-	m_right->intersection(&new_ray, right_i);
+	if (m_left)
+		m_left->intersection(&new_ray, left_i);
+	if (m_right)
+		m_right->intersection(&new_ray, right_i);
+
+	std::sort(left_i.begin(), left_i.end());
+	std::sort(right_i.begin(), right_i.end());
+
+	bool in_l = false;
+	bool in_r = false;
+
+	int li = 0, ri = 0;
+	const int ls = left_i.size(),
+	      rs = right_i.size();
+
+	while (li < ls || ri < rs)
+	{
+		const double lt = (li < ls ? left_i[li].t : DBL_MAX);
+		const double rt = (ri < rs ? right_i[ri].t : DBL_MAX);
+
+		const bool l = (lt < rt);
+
+		if (l)
+			in_l = !in_l;
+		else
+			in_r = !in_r;
+
+		switch (m_op)
+		{
+		case UNION:
+			if (l)
+				intersections.push_back(left_i[li]);
+			else
+				intersections.push_back(right_i[ri]);
+			break;
+		case INTERSECTION:
+			if (l && in_r)
+				intersections.push_back(left_i[li]);
+			else if (!l && in_l)
+				intersections.push_back(right_i[ri]);
+			break;
+		case DIFFERENCE:
+			if (l && !in_r)
+				intersections.push_back(left_i[li]);
+			else if (!l && in_l)
+			{
+				right_i[ri].normal = -1*right_i[ri].normal;
+				intersections.push_back(right_i[ri]);
+			}
+		}
+
+		if (l)
+			li++;
+		else
+			ri++;
+	}
 
 	// TODO - merge based on the CSG operator
 
@@ -233,6 +294,36 @@ Scene::get_light(int i)
 	return m_lights[i];
 }
 
+
+SceneObject*
+Scene::make_scene_object(NodeType type,
+		SceneNode *node,
+		const Matrix4x4 &trans,
+		const int id)
+{
+	SceneObject *obj = 0;
+	if (type == GEOMETRY)
+	{
+		GeometryNode *g = (GeometryNode*) node;
+		Material *m = g->material;
+		Primitive *p = g->primitive;
+		if (m && p)
+			obj = new PrimitiveObject(id, trans, p, m);
+	}
+	else if (type == CSG)
+	{
+		CsgNode *c = (CsgNode*) node;
+		SceneObject *l = make_scene_object(c->m_left->get_type(),
+				c->m_left, c->m_left->get_transform(), 0);
+		SceneObject *r = make_scene_object(c->m_right->get_type(),
+				c->m_right, c->m_right->get_transform(), 0);
+
+		obj = new CsgObject(id, trans, c->m_op, l, r);
+	}
+
+	return obj;
+}
+
 void
 Scene::make_scene(SceneNode *node,
 		const Matrix4x4 &trans,
@@ -245,15 +336,13 @@ Scene::make_scene(SceneNode *node,
 
 	switch (node->get_type())
 	{
+	case CSG:
 	case GEOMETRY:
 	{
-		GeometryNode *g = (GeometryNode*) node;
-		Material *m = g->material;
-		Primitive *p = g->primitive;
-		if (m && p)
-			scene->m_objects.push_back(new PrimitiveObject(
-						scene->m_objects.size(),
-						ntrans, p, m));
+		SceneObject *o = make_scene_object(node->get_type(), node,
+				ntrans, scene->m_objects.size());
+		if (o)
+			scene->m_objects.push_back(o);
 	}
 		break;
 	case CAMERA:

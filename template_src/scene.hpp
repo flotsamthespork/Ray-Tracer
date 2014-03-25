@@ -67,12 +67,14 @@ public:
 
 class CsgObject : public SceneObject {
 private:
+	CsgOp m_op;
 	SceneObject *const m_left;
 	SceneObject *const m_right;
 	// TODO - CSG OP
 protected:
 	CsgObject(const int id,
 			const Matrix4x4 &trans,
+			CsgOp op,
 			SceneObject *left,
 			SceneObject *right);
 
@@ -128,6 +130,11 @@ private:
 	std::vector<SceneObject*> m_objects;
 	std::vector<Light*> m_lights;
 	std::vector<Camera*> m_cameras;
+
+	static SceneObject *make_scene_object(NodeType type,
+			SceneNode *node,
+			const Matrix4x4 &trans,
+			const int id);
 
 	static void make_scene(SceneNode *node,
 			const Matrix4x4 &trans,

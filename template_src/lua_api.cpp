@@ -216,6 +216,54 @@ int scene_f_camera_cmd(lua_State *L)
 }
 
 extern "C"
+int scene_f_csg_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char *name = luaL_checkstring(L, 1);
+
+	const char *opstr = luaL_checkstring(L, 2);
+	luaL_argcheck(L, opstr, 2, "'u', 'i', 'd' expected");
+	luaL_argcheck(L, strlen(opstr) == 1, 2, "'u', 'i', 'd' expected");
+
+	CsgOp op;
+	switch (opstr[0])
+	{
+	case 'u':
+		op = UNION;
+		break;
+	case 'i':
+		op = INTERSECTION;
+		break;
+	case 'd':
+		op = DIFFERENCE;
+		break;
+	default:
+		luaL_argcheck(L, false, 2, "'u', 'i', 'd' expected");
+	}
+
+	scene_node_ud *l = (scene_node_ud*)luaL_checkudata(L, 3, SCENE_META);
+	luaL_argcheck(L, l != 0, 3, "Geometry/Csg expected");
+	luaL_argcheck(L, l->node->get_type() == GEOMETRY ||
+			l->node->get_type() == CSG, 3, "Geometry/Csg expected");
+
+	scene_node_ud *r = (scene_node_ud*)luaL_checkudata(L, 4, SCENE_META);
+	luaL_argcheck(L, r != 0, 4, "Geometry/Csg expected");
+	luaL_argcheck(L, l->node->get_type() == GEOMETRY ||
+			l->node->get_type() == CSG, 4, "Geometry/Csg expected");
+
+	data->node = new CsgNode(name, op, l->node, r->node);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+extern "C"
 int scene_f_sphere_cmd(lua_State *L)
 {
 	GRLUA_DEBUG_CALL;
@@ -486,6 +534,7 @@ static const luaL_reg scenelib_functions[] = {
 	{"light",	scene_f_light_cmd},
 	{"camera",	scene_f_camera_cmd},
 	// TODO - primitives
+	{"csg",		scene_f_csg_cmd},
 	{"sphere",	scene_f_sphere_cmd},
 	{"torus",	scene_f_torus_cmd},
 	{0, 0}
