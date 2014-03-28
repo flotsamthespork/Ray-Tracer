@@ -46,6 +46,7 @@
 #include "tracer.hpp"
 #include "colormap.hpp"
 #include "material.hpp"
+#include "mesh.hpp"
 
 // Uncomment the following line to enable debugging messages
 //#define GRLUA_ENABLE_DEBUG
@@ -206,7 +207,7 @@ int scene_f_camera_cmd(lua_State *L)
 	data->node = 0;
 
 	const char *name = luaL_checkstring(L, 1);
-	double cam_id = luaL_checknumber(L, 2);
+	int cam_id = luaL_checkinteger(L, 2);
 	data->node = new CameraNode(name, cam_id);
 
 	luaL_getmetatable(L, SCENE_META);
@@ -256,6 +257,79 @@ int scene_f_csg_cmd(lua_State *L)
 			l->node->get_type() == CSG, 4, "Geometry/Csg expected");
 
 	data->node = new CsgNode(name, op, l->node, r->node);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+extern "C"
+int scene_f_mesh_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char* name = luaL_checkstring(L, 1);
+
+	std::vector<Point3D> verts;
+	std::vector<Point2D> uvs;
+	std::vector<std::vector<int> > faces;
+
+	luaL_checktype(L, 2, LUA_TTABLE);
+	int vert_count = luaL_getn(L, 2);
+
+	luaL_argcheck(L, vert_count >= 1, 2, "Tuple of vertices expected");
+
+	for (int i = 1; i <= vert_count; i++)
+	{
+		lua_rawgeti(L, 2, i);
+
+		Point3D vertex;
+		get_tuple(L, -1, &vertex[0], 3);
+		verts.push_back(vertex);
+		lua_pop(L, 1);
+	}
+
+	luaL_checktype(L, 3, LUA_TTABLE);
+	int uv_count = luaL_getn(L, 3);
+
+	for (int i = 1; i <= uv_count; ++i)
+	{
+		lua_rawgeti(L, 3, i);
+
+		Point2D uv;
+		get_tuple(L, -1, &uv[0], 2);
+		uvs.push_back(uv);
+		lua_pop(L, 1);
+	}
+
+	luaL_checktype(L, 4, LUA_TTABLE);
+	int face_count = luaL_getn(L, 4);
+
+	luaL_argcheck(L, face_count >= 1, 4, "Tuple of faces expected");
+
+	faces.resize(face_count);
+
+	for (int i = 1; i <= face_count; ++i)
+	{
+		lua_rawgeti(L, 4, i);
+
+		luaL_checktype(L, -1, LUA_TTABLE);
+		int index_count = luaL_getn(L, -1);
+
+		luaL_argcheck(L, index_count >= 3, 4, "Tuple of indices expected");
+		faces[i-1].resize(index_count);
+		get_tuple(L, -1, &faces[i-1][0], index_count);
+
+		lua_pop(L, 1);
+	}
+
+	Mesh *mesh = new Mesh(verts, uvs, faces);
+	GRLUA_DEBUG(*mesh);
+	data->node = new GeometryNode(name, mesh);
 
 	luaL_getmetatable(L, SCENE_META);
 	lua_setmetatable(L, -2);
@@ -423,7 +497,7 @@ int scene_m_set_material_cmd(lua_State *L)
 	GeometryNode *node = (GeometryNode*) me->node;
 
 	material_ud *mat = (material_ud*)luaL_checkudata(L, 2, MATERIAL_META);
-	luaL_argcheck(L, mat != 0, 1, "Material expected");
+	luaL_argcheck(L, mat != 0, 2, "Material expected");
 
 	node->material = mat->mat;
 	return 0;
@@ -537,6 +611,7 @@ static const luaL_reg scenelib_functions[] = {
 	{"csg",		scene_f_csg_cmd},
 	{"sphere",	scene_f_sphere_cmd},
 	{"torus",	scene_f_torus_cmd},
+	{"mesh",	scene_f_mesh_cmd},
 	{0, 0}
 };
 
@@ -594,19 +669,19 @@ int tracer_f_new_cmd(lua_State *L)
 
 	int len = strlen(isstr);
 	if (!isstr || len == 0)
-		luaL_argcheck(L, false, 1, "Invalid intersection strategy");
+		luaL_argcheck(L, false, 2, "Invalid intersection strategy");
 	else if (isstr[0] == 'b')
 	{
 		if (len != 1)
-			luaL_argcheck(L, false, 1, "Brute force strategy has no options");
+			luaL_argcheck(L, false, 2, "Brute force strategy has no options");
 		params.type = BRUTE_FORCE;
 	}
 	else
-		luaL_argcheck(L, false, 1, "Invalid intersection strategy");
+		luaL_argcheck(L, false, 2, "Invalid intersection strategy");
 
 	IntersectionStrategy *is = get_strategy(params);
 	if (!is)
-		luaL_argcheck(L, false, 1, "Failed to generate strategy");
+		luaL_argcheck(L, false, 2, "Failed to generate strategy");
 
 	Scene *scene = new Scene();
 	Scene::make_scene(node->node, scene);
@@ -886,9 +961,27 @@ int material_m_set_diffuse_cmd(lua_State *L)
 	luaL_argcheck(L, me != 0, 1, "Material expected");
 
 	color_ud *color = (color_ud*)luaL_checkudata(L, 2, COLOR_META);
-	luaL_argcheck(L, color != 0, 1, "Color expected");
+	luaL_argcheck(L, color != 0, 2, "Color expected");
 
 	me->mat->set_diffuse(color->color);
+	return 0;
+}
+
+extern "C"
+int material_m_set_specular_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *me = (material_ud*)luaL_checkudata(L, 1, MATERIAL_META);
+	luaL_argcheck(L, me != 0, 1, "Material expected");
+
+	color_ud *color = (color_ud*)luaL_checkudata(L, 2, COLOR_META);
+	luaL_argcheck(L, color != 0, 2, "Color expected");
+
+	double shiny = luaL_checknumber(L, 3);
+
+	me->mat->set_specular(color->color);
+	me->mat->set_shininess(shiny);
 	return 0;
 }
 
@@ -901,9 +994,36 @@ int material_m_set_bump_cmd(lua_State *L)
 	luaL_argcheck(L, me != 0, 1, "Material expected");
 
 	color_ud *color = (color_ud*)luaL_checkudata(L, 2, COLOR_META);
-	luaL_argcheck(L, color != 0, 1, "Color expected");
+	luaL_argcheck(L, color != 0, 2, "Color expected");
 
 	me->mat->set_bump(color->color);
+	return 0;
+}
+
+int material_m_set_refraction_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *me = (material_ud*)luaL_checkudata(L, 1, MATERIAL_META);
+	luaL_argcheck(L, me != 0, 1, "Material expected");
+
+	double refraction_index = luaL_checknumber(L, 2);
+	bool is_dielectric = lua_toboolean(L, 3);
+
+	me->mat->set_refraction_index(refraction_index, is_dielectric);
+	return 0;
+}
+
+int material_m_set_reflection_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	material_ud *me = (material_ud*)luaL_checkudata(L, 1, MATERIAL_META);
+	luaL_argcheck(L, me != 0, 1, "Material expected");
+
+	double reflection = luaL_checknumber(L, 2);
+
+	me->mat->set_mirror_coefficient(reflection);
 	return 0;
 }
 
@@ -920,7 +1040,10 @@ static const luaL_reg materiallib_functions[] = {
 static const luaL_reg materiallib_methods[] = {
 	{"__gc",		material_m_gc_cmd},
 	{"set_diffuse",		material_m_set_diffuse_cmd},
+	{"set_specular",	material_m_set_specular_cmd},
 	{"set_bump",		material_m_set_bump_cmd},
+	{"set_refraction",	material_m_set_refraction_cmd},
+	{"set_reflection",	material_m_set_reflection_cmd},
 	{0, 0}
 };
 

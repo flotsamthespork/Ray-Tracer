@@ -819,7 +819,7 @@ static double sink_lookup(double t)
 #endif
 
 
-#if 0
+#if 1
 /*
  * Alternate version -- simpler but less robust and less efficient.
  * from Gems I.

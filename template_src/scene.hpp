@@ -70,7 +70,6 @@ private:
 	CsgOp m_op;
 	SceneObject *const m_left;
 	SceneObject *const m_right;
-	// TODO - CSG OP
 protected:
 	CsgObject(const int id,
 			const Matrix4x4 &trans,

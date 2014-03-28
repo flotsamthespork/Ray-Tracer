@@ -93,7 +93,7 @@ RayTracer::trace_px(const int px,
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
 	Vector3D ray_dir = ray_pos - m_camera->get_pos();
 
-	Ray r(m_camera->get_pos(), ray_dir);
+	Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
 
 	ray(&r, ray_color, data);
 
@@ -119,24 +119,28 @@ RayTracer::ray(const Ray *ray, Colour &ray_color,
 
 
 Colour
-RayTracer::light(const Ray *ray,
+RayTracer::light(const Ray *light_ray,
 		IntersectionData &i,
 		JobData *data)
 {
-	const Vector3D view_dir = -1*ray->get_dir();
-	const Point3D point = ray->get_pos() + i.t*ray->get_dir();
+	const Vector3D view_dir = -1*light_ray->get_dir();
+	const Point3D point = light_ray->get_pos() + i.t*light_ray->get_dir();
 
 	Material *mat = i.object->get_material();
 
 	ColorMap *cm_d = mat->get_diffuse();
 	ColorMap *cm_s = mat->get_specular();
 	ColorMap *cm_b = mat->get_bump();
+	const double shiny = mat->get_shininess();
+	const double reflect = mat->get_mirror_coefficient();
+	const double refract = mat->get_refraction_index();
+	const bool is_dielectric = mat->is_dielectric();
 
 	Colour kd = cm_d->get_color(i.uv);
+	Colour ks(0);
+	if (cm_s)
+		ks = cm_s->get_color(i.uv);
 
-	Colour light_color = m_ambient * kd;
-
-	// TODO - bump mapping (change that normal broski!)
 	Vector3D normal = i.normal;
 	normal.normalize();
 
@@ -146,13 +150,10 @@ RayTracer::light(const Ray *ray,
 		normal.normalize();
 	}
 
-//	const Colour color;
-//	const Point3D position;
-//	double falloff[3];
+	Colour diffuse_color = m_ambient * kd;
+	Colour specular_color(0);
 
 	const int nlights = m_scene->get_light_count();
-//	std::cout << nlights << std::endl;
-
 	for (int idx = 0; idx < nlights; ++idx)
 	{
 		const Light *l = m_scene->get_light(idx);
@@ -166,9 +167,9 @@ RayTracer::light(const Ray *ray,
 		if (nl < 0)
 			continue;
 
-		Ray light_ray(point, light_dir, true);
+		Ray shadow_ray(point, light_dir, 1, 1, NULL, true);
 		Intersection light_i(data);
-		m_intersect->get_intersection(&light_ray, &light_i);
+		m_intersect->get_intersection(&shadow_ray, &light_i);
 
 		// Somthing is between light and object
 		if (light_i.intersects() &&
@@ -179,17 +180,76 @@ RayTracer::light(const Ray *ray,
 		light_view_vec.normalize();
 
 		Colour c = l->color;
-		c = (normal.dot(light_dir) /
+		c = (nl /
 			(l->falloff[0] +
 			 l->falloff[1]*r +
 			 l->falloff[2]*r*r)) * c;
 
-		Vector3D r_vec = (2*nl)*normal - light_dir;
-		const double rv = std::max(0.0, r_vec.dot(light_view_vec));
-		Colour p = kd;
+		if (cm_s)
+		{
+			Vector3D r_vec = (2*nl)*normal - light_dir;
+			const double rv = std::max(0.0, r_vec.dot(light_view_vec));
+			specular_color = specular_color + (pow(rv,shiny) / nl)*ks*c;
+		}
 
-		light_color = light_color + p*c;
+		diffuse_color = diffuse_color + kd*c;
 	}
 
-	return light_color;
+	const double power = light_ray->get_power();
+
+	if (power > 0.01)
+	{
+		// TODO - refract and get another coefficient for the reflectiveness c:
+
+		// TODO - for refraction - multiply light_color*refract_color
+
+		const double rdn = light_ray->get_dir().dot(normal);
+
+		if (refract)
+		{
+			double n1, n2;
+			n1 = light_ray->get_refraction_index();
+			SceneObject *obj;
+			if (i.object != light_ray->get_refraction_src())
+			{
+				n2 = mat->get_refraction_index();
+				obj = i.object;
+			}
+			else
+			{
+				n2 = 1;
+				obj = NULL;
+			}
+
+			const double n = n1 / n2;
+			const double c = sqrt(1 - n*n*(1 - rdn*rdn));
+
+//			std::cout << refract << std::endl;
+
+			Vector3D ray_dir = (n*light_ray->get_dir()) + (n*rdn - c) * normal;
+			Ray r(point, ray_dir, power, n2, obj);
+
+			Colour r_color(0);
+
+			if (ray(&r, r_color, data))
+				diffuse_color = diffuse_color*r_color;
+//				diffuse_color = r_color;
+		}
+
+		if (reflect)
+		{
+	//		std::cout << reflect << std::endl;
+			diffuse_color = (1-reflect)*diffuse_color;
+
+			Colour r_color(0);
+			Vector3D ray_dir = light_ray->get_dir() - 2*rdn*normal;
+			Ray r(point, ray_dir, power*reflect,
+					light_ray->get_refraction_index(),
+					light_ray->get_refraction_src());
+			if (ray(&r, r_color, data))
+				diffuse_color = diffuse_color + reflect*r_color;
+		}
+	}
+
+	return diffuse_color + specular_color;
 }

@@ -15,7 +15,7 @@ private:
 	double m_refraction_index;
 	bool m_isdielectric;
 
-	bool m_mirror_coeff;
+	double m_mirror_coeff;
 
 public:
 	Material();

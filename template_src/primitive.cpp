@@ -117,16 +117,16 @@ Torus::intersection(const Ray *ray,
 	const double C = 4*(K*a_b + 2*outer_sq*ray_pos[2]*ray_dir[2]);
 	const double D = K*K + 4*outer_sq*(ray_pos[2]*ray_pos[2] - inner_sq);
 
-//	double coeff[5];
-//	coeff[4] = 1;
-//	coeff[3] = A;
-//	coeff[2] = B;
-//	coeff[1] = C;
-//	coeff[0] = D;
+	double coeff[5];
+	coeff[4] = 1;
+	coeff[3] = A;
+	coeff[2] = B;
+	coeff[1] = C;
+	coeff[0] = D;
 	double roots[4];
 //	int n_roots = quarticSolver(coeff, roots);
-	int n_roots = quarticRoots(A, B, C, D, roots);
-//	int n_roots = SolveQuartic(coeff, roots);
+//	int n_roots = quarticRoots(A, B, C, D, roots);
+	int n_roots = SolveQuartic(coeff, roots);
 //	int n_roots = quarticRoots(B/A, C/A, D/A, E/A, roots);
 
 	for (int idx = 0; idx < n_roots; ++idx)
@@ -138,13 +138,14 @@ Torus::intersection(const Ray *ray,
 		const double x2 = ip[0]*ip[0];
 		const double y2 = ip[1]*ip[1];
 		const double z2 = ip[2]*ip[2];
-		const double mp = (x2+y2+x2) - inner_sq - outer_sq;
+		const double mp = (x2+y2+z2) - inner_sq - outer_sq;
 
 		d.normal[0] = 4*ip[0]*mp;
 		d.normal[1] = 4*ip[1]*mp;
 		d.normal[2] = 4*ip[2]*mp + 8*outer_sq*ip[2];
 
 		get_uv(ip, d.uv);
+		d.u_tangent = d.normal.cross(Vector3D(0,1,0));
 
 		intersections.push_back(d);
 	}
