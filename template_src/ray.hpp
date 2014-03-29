@@ -32,7 +32,7 @@ public:
 	double get_refraction_index() const;
 	SceneObject *get_refraction_src() const;
 
-	void transform(const Matrix4x4 &transform, Ray &ray) const;
+	void transform(const Matrix4x4 *transform, Ray &ray) const;
 
 };
 

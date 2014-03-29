@@ -1,44 +1,26 @@
 
 #include <cmath>
 #include "polyroots.hpp"
+#include "scene.hpp"
 
 #include "primitive.hpp"
 
-/*
-void
-Sphere::intersect(const Ray *ray, Intersection *i)
+static void sphere_uv_map(Vector3D pos,
+		double *uv)
 {
-	double roots[2];
-	int n_roots;
-
-	const Vector3D pc = ray->get_pos() - m_pos;
-
-	double a = ray->get_dir().dot(ray->get_dir());
-	double b = 2 * ray->get_dir().dot(pc);
-	double c = pc.dot(pc) - m_radius*m_radius;
-
-	n_roots = quadraticRoots(a,b,c, roots);
-	for (int idx = 0; idx < n_roots; ++idx)
-	{
-//		if (i->
-	}
+	pos.normalize();
+	uv[0] = 0.5 - atan2(pos[2], pos[0]) / (2.0*M_PI);
+	uv[1] = 0.5 - asin(pos[1]) / M_PI;
 }
 
-
-void
-Box::intersect(const Ray *ray, Intersection *i)
-{
-	// TODO
-}
-*/
 void
 Sphere::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *intersections)
 {
 	double roots[2];
 	int n_roots;
 
-	const Vector3D pc = ray->get_pos() - m_pos;
+	const Vector3D pc = ray->get_pos() - Point3D(0,0,0);
 
 	double a = ray->get_dir().dot(ray->get_dir());
 	double b = 2 * ray->get_dir().dot(pc);
@@ -51,44 +33,22 @@ Sphere::intersection(const Ray *ray,
 		d.t = roots[idx];
 
 		Point3D ip = ray->get_pos() + d.t*ray->get_dir();
-		d.normal = ip-m_pos;
+		d.normal = ip - Point3D(0,0,0);
 		d.u_tangent = d.normal.cross(Vector3D(0,1,0));
-		get_uv(ip, d.uv);
-		intersections.push_back(d);
+		sphere_uv_map(d.normal, d.uv);
+		intersections->on_intersection(d);
 	}
 }
 
 void
-Sphere::get_uv(Point3D point,
-		double *uv)
-{
-	Vector3D v = point - m_pos;
-	v.normalize();
-	uv[0] = 0.5 - atan2(v[2], v[0])/(2.0*M_PI);
-	uv[1] = 0.5 - asin(v[1])/M_PI;
-
-//	uv[0] = acos(v[2]) / M_PI;
-//	uv[1] = acos(v[0]/sin(M_PI*uv[0]))/(2.0*M_PI);
-
-//	uv[0] = atan2(v[2], v[0]);
-//	uv[1] = atan2(v[1], sqrt(v[0]*v[0]+v[2]*v[2]));
-}
-
-
-void
 Box::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *intersections)
 {
 }
 
-void
-Box::get_uv(Point3D point,
-		double *uv)
-{
-}
 void
 Torus::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *intersections)
 {
 	const Point3D &ray_pos = ray->get_pos();
 	const Vector3D &ray_dir = ray->get_dir();
@@ -96,17 +56,6 @@ Torus::intersection(const Ray *ray,
 
 	const double inner_sq = m_inner_rad*m_inner_rad;
 	const double outer_sq = m_outer_rad*m_outer_rad;
-/*
-	double a = ray_dir.dot(ray_dir);
-	double b = 2*ray_dir.dot(ray_vpos);
-	double c = ray_vpos.dot(ray_vpos) - inner_sq - outer_sq;
-
-	const double A = a*a;
-	const double B = 2*a*b;
-	const double C = b*b + 2*a*c + 4*outer_sq*ray_dir[2]*ray_dir[2];
-	const double D = 2*b*c + 8*outer_sq*ray_pos[2]*ray_dir[2];
-	const double E = c*c + 4*outer_sq*ray_pos[2]*ray_pos[2] - 4*outer_sq*inner_sq;
-*/
 
 	const double a_a = ray_vpos.dot(ray_vpos);
 	const double a_b = ray_vpos.dot(ray_dir);
@@ -124,11 +73,9 @@ Torus::intersection(const Ray *ray,
 	coeff[1] = C;
 	coeff[0] = D;
 	double roots[4];
-//	int n_roots = quarticSolver(coeff, roots);
-//	int n_roots = quarticRoots(A, B, C, D, roots);
-	int n_roots = SolveQuartic(coeff, roots);
-//	int n_roots = quarticRoots(B/A, C/A, D/A, E/A, roots);
 
+	int n_roots = SolveQuartic(coeff, roots);
+//	int n_roots = quarticRoots(A, B, C, D, roots);
 	for (int idx = 0; idx < n_roots; ++idx)
 	{
 		IntersectionData d;
@@ -144,20 +91,15 @@ Torus::intersection(const Ray *ray,
 		d.normal[1] = 4*ip[1]*mp;
 		d.normal[2] = 4*ip[2]*mp + 8*outer_sq*ip[2];
 
-		get_uv(ip, d.uv);
 		d.u_tangent = d.normal.cross(Vector3D(0,1,0));
 
-		intersections.push_back(d);
+		double len = sqrt(x2 + y2);
+		double x = len - m_outer_rad;
+		d.uv[0] = (1.0 - (atan2(ip[1], ip[0]) + M_PI) / (2.0*M_PI));
+		d.uv[1] = (atan2(ip[2], x) + M_PI) / (2.0*M_PI);
+
+		intersections->on_intersection(d);
 	}
 }
 
-void
-Torus::get_uv(Point3D p,
-		double *uv)
-{
-	uv[0] = (1.0 - (atan2(p[1], p[0]) + M_PI) / (2.0*M_PI));
-	double len = sqrt(p[0]*p[0] + p[1]*p[1]);
 
-	double x = len - m_outer_rad;
-	uv[1] = (atan2(p[2],x) + M_PI) / (2.0*M_PI);
-}

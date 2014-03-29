@@ -90,6 +90,9 @@ RayTracer::trace_px(const int px,
 	// TODO - background color
 	Colour ray_color(0);
 
+	if (x == 250 && y == 250)
+		std::cout << "W" << std::endl;
+
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
 	Vector3D ray_dir = ray_pos - m_camera->get_pos();
 
@@ -97,6 +100,25 @@ RayTracer::trace_px(const int px,
 
 	ray(&r, ray_color, data);
 
+#define SAMPLES 2
+/*
+	const double d = 1.0/SAMPLES;
+
+	for (int i = 0; i < SAMPLES; ++i)
+	{
+		for (int j = 0; j < SAMPLES; ++j)
+		{
+			Colour c(0);
+			Point3D ray_pos = m_px_to_wcs * Point3D(x+(0.5+i)*d, y+(0.5+j)*d, 0);
+			Vector3D ray_dir = ray_pos - m_camera->get_pos();
+
+			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
+			ray(&r, c, data);
+
+			ray_color = ray_color + 1.0/(SAMPLES*SAMPLES)*c;
+		}
+	}
+*/
 	(*m_img)(x,y,0) = ray_color.R();
 	(*m_img)(x,y,1) = ray_color.G();
 	(*m_img)(x,y,2) = ray_color.B();
@@ -232,8 +254,8 @@ RayTracer::light(const Ray *light_ray,
 			Colour r_color(0);
 
 			if (ray(&r, r_color, data))
-				diffuse_color = diffuse_color*r_color;
-//				diffuse_color = r_color;
+//				diffuse_color = diffuse_color*r_color;
+				diffuse_color = r_color;
 		}
 
 		if (reflect)

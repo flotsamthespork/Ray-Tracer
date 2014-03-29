@@ -33,17 +33,12 @@ Intersection::Intersection(JobData *data,
 
 
 void
-Intersection::get_intersection(const Ray *ray,
-		SceneObject *object)
+Intersection::get_intersections(const Ray *ray, SceneObject *object,
+			std::vector<IntersectionData> &intersections)
 {
 	if (!m_cache || m_cache->test_id(object->get_id()))
 	{
-//		Ray new_ray;
-//		Primitive *o = object->get_primitive();
-//		ray->transform(object->get_itransform(), new_ray);
-
-//		o->
-		object->intersection(ray, this);
+		object->intersection(ray, this, intersections);
 	}
 }
 
@@ -124,7 +119,7 @@ IntersectionCache::increment_cache_version()
 bool
 IntersectionCache::test_id(int id)
 {
-	if (m_versions[id] < m_cache_version)
+	if (id >= 0 && m_versions[id] < m_cache_version)
 	{
 		m_versions[id] = m_cache_version;
 		return true;
@@ -148,6 +143,27 @@ IntersectionStrategy::~IntersectionStrategy()
 {
 }
 
+void
+IntersectionStrategy::get_intersection(const Ray *ray, Intersection *i)
+{
+	i->m_vec->resize(0);
+	get_intersections(ray, *i->m_vec, i);
+
+	std::sort(i->m_vec->begin(), i->m_vec->end());
+
+	if (i->m_vec->size() > 0)
+	{
+		for (std::vector<IntersectionData>::iterator it = i->m_vec->begin();
+				it != i->m_vec->end(); ++it)
+		{
+			if (it->t > i->m_eps)
+			{
+				i->update_intersection(*it);
+				break;
+			}
+		}
+	}
+}
 
 void
 IntersectionStrategy::add_object(SceneObject *object)
@@ -173,8 +189,9 @@ SpatialSubdivisionStrategy::create_intersection_cache()
 
 
 void
-SpatialSubdivisionStrategy::get_intersection(const Ray *ray,
-		Intersection *intersection)
+SpatialSubdivisionStrategy::get_intersections(const Ray *ray,
+		std::vector<IntersectionData> &intersections,
+		Intersection *i)
 {
 	// TODO - use the grid regions to find a nice intersection..
 }
@@ -195,12 +212,14 @@ SpatialSubdivisionStrategy::do_add_object(SceneObject *object)
 
 
 void
-BruteForceStrategy::get_intersection(const Ray *ray, Intersection *intersection)
+BruteForceStrategy::get_intersections(const Ray *ray,
+		std::vector<IntersectionData> &intersections,
+		Intersection *inter)
 {
 	for (std::vector<SceneObject*>::iterator i = m_objects.begin();
 			i != m_objects.end(); ++i)
 	{
-		intersection->get_intersection(ray, *i);
+		inter->get_intersections(ray, *i, intersections);
 	}
 	// TODO - potentially a way to break out of the loop early
 }

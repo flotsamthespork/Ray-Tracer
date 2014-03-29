@@ -348,17 +348,13 @@ int scene_f_sphere_cmd(lua_State *L)
 	data->node = 0;
 
 	const char *name = (nargs >= 1 ? luaL_checkstring(L, 1) : "");
-	Point3D pos;
-	if (nargs >= 2)
-		get_tuple(L, 2, &pos[0], 3);
-
 	double radius;
-	if (nargs >= 3)
-		radius = luaL_checknumber(L, 3);
+	if (nargs >= 2)
+		radius = luaL_checknumber(L, 2);
 	else
 		radius = 1;
 
-	Primitive *p = new Sphere(pos, radius);
+	Primitive *p = new Sphere(radius);
 	data->node = new GeometryNode(name, p);
 
 	luaL_getmetatable(L, SCENE_META);

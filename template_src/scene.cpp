@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <float.h>
 #include <iostream>
+#include <set>
 #include "ray.hpp"
 #include "intersection.hpp"
 
@@ -9,15 +10,19 @@
 
 
 SceneObject::SceneObject(const int id,
-		const Matrix4x4 &trans) :
+		const Matrix4x4 *trans) :
 	m_id(id),
-	m_trans(trans),
-	m_itrans(trans.invert())
+	m_trans(trans ? new Matrix4x4(*trans) : NULL),
+	m_itrans(trans ? new Matrix4x4(trans->invert()) : NULL)
 {
 }
 
 SceneObject::~SceneObject()
 {
+	if (m_trans)
+		delete m_trans;
+	if (m_itrans)
+		delete m_itrans;
 }
 
 
@@ -28,12 +33,47 @@ SceneObject::get_id()
 }
 
 void
+SceneObject::complete_intersection(IntersectionData &d)
+{
+	if (m_trans)
+	{
+		Matrix4x4 t = m_itrans->transpose();
+		d.normal = t * d.normal;
+		d.u_tangent = t * d.u_tangent;
+	}
+}
+
+void
+SceneObject::intersection(const Ray *ray,
+		Intersection *i,
+		std::vector<IntersectionData> &intersections)
+{
+	Ray new_ray;
+	const Ray *r;
+	double t_multiplier;
+	if (m_trans)
+	{
+		ray->transform(m_itrans, new_ray);
+		r = &new_ray;
+		t_multiplier = 1/new_ray.get_dir().length();
+		new_ray.normalize();
+	}
+	else
+	{
+		r = ray;
+		t_multiplier = 1.0;
+	}
+
+	IntersectionHelper helper(this, i, &intersections, t_multiplier);
+	intersection(r, &helper);
+}
+
+/*
+void
 SceneObject::intersection(const Ray *ray, Intersection *i)
 {
-//	std::vector<IntersectionData> intersections;
 	i->m_vec->resize(0);
 	intersection(ray, *i->m_vec);
-	// TODO
 
 	std::sort(i->m_vec->begin(), i->m_vec->end());
 
@@ -50,9 +90,9 @@ SceneObject::intersection(const Ray *ray, Intersection *i)
 		}
 	}
 }
-
+*/
 PrimitiveObject::PrimitiveObject(const int id,
-			const Matrix4x4 &trans,
+			const Matrix4x4 *trans,
 			Primitive *primitive,
 			Material *material) :
 	SceneObject(id, trans),
@@ -67,24 +107,20 @@ PrimitiveObject::~PrimitiveObject()
 
 void
 PrimitiveObject::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *helper)
 {
-	Ray new_ray;
-	ray->transform(m_itrans, new_ray);
+	m_prim->intersection(ray, helper);
+}
 
-	m_prim->intersection(&new_ray, intersections);
-
-	for (std::vector<IntersectionData>::iterator i = intersections.begin();
-			i != intersections.end(); ++i)
-	{
-		i->object = this;
-		i->normal = m_itrans.transpose() * i->normal;
-		i->u_tangent = m_itrans.transpose() * i->normal;
-	}
+void
+PrimitiveObject::complete_intersection(IntersectionData &d)
+{
+	SceneObject::complete_intersection(d);
+	d.object = this;
 }
 
 CsgObject::CsgObject(const int id,
-			const Matrix4x4 &trans,
+			const Matrix4x4 *trans,
 			CsgOp op,
 			SceneObject *left,
 			SceneObject *right) :
@@ -105,24 +141,21 @@ CsgObject::~CsgObject()
 
 void
 CsgObject::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *helper)
 {
-	Ray new_ray;
-	ray->transform(m_itrans, new_ray);
-
 	std::vector<IntersectionData> left_i;
 	std::vector<IntersectionData> right_i;
 
 	if (m_left)
-		m_left->intersection(&new_ray, left_i);
+		m_left->intersection(ray, helper->get_intersection(), left_i);
 	if (m_right)
-		m_right->intersection(&new_ray, right_i);
+		m_right->intersection(ray, helper->get_intersection(), right_i);
 
 	std::sort(left_i.begin(), left_i.end());
 	std::sort(right_i.begin(), right_i.end());
 
-	bool in_l = false;
-	bool in_r = false;
+	std::set<PrimitiveObject*> in_l;
+	std::set<PrimitiveObject*> in_r;
 
 	int li = 0, ri = 0;
 	const int ls = left_i.size(),
@@ -136,31 +169,41 @@ CsgObject::intersection(const Ray *ray,
 		const bool l = (lt < rt);
 
 		if (l)
-			in_l = !in_l;
+		{
+			PrimitiveObject *o = left_i[li].object;
+			std::set<PrimitiveObject*>::iterator it = in_l.find(o);
+			if (it != in_l.end())	in_l.erase(o);
+			else			in_l.insert(o);
+		}
 		else
-			in_r = !in_r;
+		{
+			PrimitiveObject *o = right_i[ri].object;
+			std::set<PrimitiveObject*>::iterator it = in_r.find(o);
+			if (it != in_r.end())	in_r.erase(o);
+			else			in_r.insert(o);
+		}
 
 		switch (m_op)
 		{
 		case UNION:
 			if (l)
-				intersections.push_back(left_i[li]);
+				helper->on_intersection(left_i[li]);
 			else
-				intersections.push_back(right_i[ri]);
+				helper->on_intersection(right_i[ri]);
 			break;
 		case INTERSECTION:
-			if (l && in_r)
-				intersections.push_back(left_i[li]);
-			else if (!l && in_l)
-				intersections.push_back(right_i[ri]);
+			if (l && in_r.size() > 0)
+				helper->on_intersection(left_i[li]);
+			else if (!l && in_l.size() > 0)
+				helper->on_intersection(right_i[ri]);
 			break;
 		case DIFFERENCE:
-			if (l && !in_r)
-				intersections.push_back(left_i[li]);
-			else if (!l && in_l)
+			if (l && in_r.size() == 0)
+				helper->on_intersection(left_i[li]);
+			else if (!l && in_l.size() > 0 && in_r.size() == 0)
 			{
 				right_i[ri].normal = -1*right_i[ri].normal;
-				intersections.push_back(right_i[ri]);
+				helper->on_intersection(right_i[ri]);
 			}
 		}
 
@@ -169,20 +212,21 @@ CsgObject::intersection(const Ray *ray,
 		else
 			ri++;
 	}
-
-	// TODO - merge based on the CSG operator
-
-	for (std::vector<IntersectionData>::iterator i = intersections.begin();
-			i != intersections.end(); ++i)
-	{
-		i->normal = m_itrans.transpose() * i->normal;
-		i->u_tangent = m_itrans.transpose() * i->normal;
-	}
 }
 
-Light::Light(LightNode *node) :
+IntersectionCache*
+IntersectionHelper::get_cache(int size)
+{
+	IntersectionCache *c = m_intersection->get_cache();
+	if (c)
+		return c->get_subcache(m_obj->get_id(), size);
+	return 0;
+}
+
+
+Light::Light(LightNode *node, const Matrix4x4 &trans) :
 	color(node->color),
-	position(node->get_transform()*node->position)
+	position(trans*node->position)
 {
 	falloff[0] = node->falloff[0];
 	falloff[1] = node->falloff[1];
@@ -190,16 +234,16 @@ Light::Light(LightNode *node) :
 }
 
 
-Camera::Camera(CameraNode *cam) :
+Camera::Camera(CameraNode *cam, const Matrix4x4 &trans) :
 	m_cam_id(cam->cam_id),
 	m_position(!cam->rel_pos ? cam->position :
-			(cam->get_transform() * cam->position)),
+			(trans * cam->position)),
 	m_view(!cam->rel_view ? cam->view :
-			(cam->get_transform() * cam->view)),
+			(trans * cam->view)),
 	m_fov(cam->fov)
 {
 	Vector3D up = (!cam->rel_up ? cam->up :
-			(cam->get_transform() * cam->up));
+			(trans * cam->up));
 	Vector3D eye_vec(m_position[0],
 			m_position[1],
 			m_position[2]);
@@ -308,17 +352,17 @@ Scene::make_scene_object(NodeType type,
 		Material *m = g->material;
 		Primitive *p = g->primitive;
 		if (m && p)
-			obj = new PrimitiveObject(id, trans, p, m);
+			obj = new PrimitiveObject(id, &trans, p, m);
 	}
 	else if (type == CSG)
 	{
 		CsgNode *c = (CsgNode*) node;
 		SceneObject *l = make_scene_object(c->m_left->get_type(),
-				c->m_left, c->m_left->get_transform(), 0);
+				c->m_left, c->m_left->get_transform(), -1);
 		SceneObject *r = make_scene_object(c->m_right->get_type(),
-				c->m_right, c->m_right->get_transform(), 0);
+				c->m_right, c->m_right->get_transform(), -1);
 
-		obj = new CsgObject(id, trans, c->m_op, l, r);
+		obj = new CsgObject(id, &trans, c->m_op, l, r);
 	}
 
 	return obj;
@@ -348,13 +392,13 @@ Scene::make_scene(SceneNode *node,
 	case CAMERA:
 	{
 		CameraNode *c = (CameraNode*) node;
-		scene->m_cameras.push_back(new Camera(c));
+		scene->m_cameras.push_back(new Camera(c,trans));
 	}
 		break;
 	case LIGHT:
 	{
 		LightNode *l = (LightNode*) node;
-		scene->m_lights.push_back(new Light(l));
+		scene->m_lights.push_back(new Light(l,trans));
 	}
 		break;
 	default: break;

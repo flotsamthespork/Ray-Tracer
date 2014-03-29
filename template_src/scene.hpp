@@ -11,46 +11,54 @@
 
 class Ray;
 class Intersection;
+class IntersectionCache;
 class Scene;
 
 class CsgObject;
+class IntersectionHelper;
 
 class SceneObject {
 protected:
 	const int m_id;
-	const Matrix4x4 m_trans;
-	const Matrix4x4 m_itrans;
+	const Matrix4x4 *m_trans;
+	const Matrix4x4 *m_itrans;
 	
 	SceneObject(const int id,
-			const Matrix4x4 &trans);
+			const Matrix4x4 *trans);
 
 	virtual void intersection(const Ray *ray,
-			std::vector<IntersectionData> &intersections) = 0;
-
+			IntersectionHelper *helper) = 0;
 public:
 	virtual ~SceneObject();
 
 	int get_id();
 
-	void intersection(const Ray *ray, Intersection *i);
+	void intersection(const Ray *ray,
+			Intersection *intersection,
+			std::vector<IntersectionData> &intersections);
+
+	virtual void complete_intersection(IntersectionData &d);
 
 	friend class CsgObject;
 };
+
 
 class PrimitiveObject : public SceneObject {
 private:
 	Primitive *const m_prim;
 	Material *const m_material;
 protected:
+	virtual void intersection(const Ray *ray,
+			IntersectionHelper *helper);
+public:
 	PrimitiveObject(const int id,
-			const Matrix4x4 &trans,
+			const Matrix4x4 *trans,
 			Primitive *primitive,
 			Material *material);
 
-	virtual void intersection(const Ray *ray,
-			std::vector<IntersectionData> &intersections);
-public:
 	virtual ~PrimitiveObject();
+
+	virtual void complete_intersection(IntersectionData &d);
 
 	Primitive *get_primitive()
 	{
@@ -61,8 +69,6 @@ public:
 	{
 		return m_material;
 	}
-
-	friend class Scene;
 };
 
 class CsgObject : public SceneObject {
@@ -72,26 +78,59 @@ private:
 	SceneObject *const m_right;
 protected:
 	CsgObject(const int id,
-			const Matrix4x4 &trans,
+			const Matrix4x4 *trans,
 			CsgOp op,
 			SceneObject *left,
 			SceneObject *right);
 
 	virtual void intersection(const Ray *ray,
-			std::vector<IntersectionData> &intersections);
+			IntersectionHelper *helper);
 public:
 	virtual ~CsgObject();
 
 	friend class Scene;
 };
 
+class IntersectionHelper {
+private:
+	std::vector<IntersectionData>*	m_intersections;
+	SceneObject*			m_obj;
+	Intersection*			m_intersection;
+	double				m_t_multiplier;
+public:
+	IntersectionHelper(SceneObject *obj,
+			Intersection *intersection,
+			std::vector<IntersectionData>* intersections,
+			double t_multiplier) :
+		m_intersections(intersections),
+		m_obj(obj),
+		m_intersection(intersection),
+		m_t_multiplier(t_multiplier)
+	{
+	}
+
+	Intersection *get_intersection()
+	{
+		return m_intersection;
+	}
+
+	IntersectionCache *get_cache(int size);
+
+	void on_intersection(IntersectionData &d)
+	{
+		d.t *= m_t_multiplier;
+		m_obj->complete_intersection(d);
+		m_intersections->push_back(d);
+	}
+	
+};
 
 class Light {
 private:
 	// TODO - light position
 	// TODO - other light parameters
 protected:
-	Light(LightNode *node);
+	Light(LightNode *node, const Matrix4x4 &trans);
 public:
 	const Colour color;
 	const Point3D position;
@@ -109,7 +148,7 @@ private:
 	const double m_fov;
 	Matrix4x4 m_projection;
 
-	Camera(CameraNode *cam);
+	Camera(CameraNode *cam, const Matrix4x4 &trans);
 public:
 	virtual ~Camera();
 

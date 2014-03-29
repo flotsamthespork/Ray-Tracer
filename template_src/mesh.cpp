@@ -1,6 +1,7 @@
 
 #include "algebra.hpp"
 #include "mat3.hpp"
+#include "scene.hpp"
 
 #include "mesh.hpp"
 
@@ -54,7 +55,7 @@ triangle_intersection(const Ray *ray,
 		return false;
 	double d2 = Matrix3x3(v1, r, ray->get_dir()).det();
 	gamma = d2/d;
-	if (gamma < 0 || (beta+gamma) > 1)
+	if (gamma < 0 || (beta+gamma) >= 1)
 		return false;
 
 	return true;
@@ -80,7 +81,7 @@ Polygon::Polygon(const std::vector<Point3D> &verts,
 
 void
 Polygon::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *intersections)
 {
 
 	for (int i = 1; i < m_verts.size()-1; ++i)
@@ -93,8 +94,7 @@ Polygon::intersection(const Ray *ray,
 
 			d.normal = m_normal;
 
-			// TODO - figure this one out.
-			d.u_tangent = Vector3D(1,0,0);
+			d.u_tangent = m_verts[i+1] - m_verts[0];
 
 			Point2D uv0 = m_uvs[0];
 			Point2D uv1 = m_uvs[i];
@@ -108,16 +108,10 @@ Polygon::intersection(const Ray *ray,
 			d.t = (m_verts[0]-ray->get_pos()).dot(m_normal) /
 				(m_normal.dot(ray->get_dir()));
 
-			intersections.push_back(d);
+			intersections->on_intersection(d);
 			break;
 		}
 	}
-}
-
-void
-Polygon::get_uv(Point3D point,
-		double *uv)
-{
 }
 
 
@@ -125,43 +119,44 @@ Mesh::Mesh(const std::vector<Point3D>& verts,
 		const std::vector<Point2D> &uv,
 		const std::vector<Face>& faces)
 {
+	m_intersect = new BruteForceStrategy();
 	for (int i = 0; i < faces.size(); ++i)
 	{
-		Polygon p(verts, uv, faces[i]);
-		m_polys.push_back(p);
+//		Polygon p(verts, uv, faces[i]);
+//		m_polys.push_back(p);
+		Polygon *p = new Polygon(verts, uv, faces[i]);
+		PrimitiveObject *o = new PrimitiveObject(i, NULL, p, NULL);
+		m_polys.push_back(o);
+		m_intersect->add_object(o);
 	}
+}
+
+Mesh::~Mesh()
+{
+	for (int i = 0; i < m_polys.size(); ++i)
+	{
+		delete m_polys[i]->get_primitive();
+		delete m_polys[i];
+	}
+	delete m_intersect;
 }
 
 void
 Mesh::intersection(const Ray *ray,
-		std::vector<IntersectionData> &intersections)
+		IntersectionHelper *intersections)
 {
+	Intersection *i = intersections->get_intersection();
+	IntersectionCache *old_cache = i->swap_cache(intersections->get_cache(m_polys.size()));
 
-	for (int i = 0; i < m_polys.size(); ++i)
+	std::vector<IntersectionData> inters;
+	m_intersect->get_intersections(ray, inters, i);
+
+	for (int j = 0; j < inters.size(); ++j)
 	{
-		m_polys[i].intersection(ray, intersections);
+		intersections->on_intersection(inters[j]);
 	}
+
+	i->swap_cache(old_cache);
 }
 
-void
-Mesh::get_uv(Point3D point,
-		double *uv)
-{
-}
 
-/*
-class Mesh : public Primitive {
-public:
-
-	virtual void intersection(const Ray *ray,
-			std::vector<IntersectionData> &intersections);
-
-	virtual void get_uv(Point3D point,
-			double *uv);
-
-private:
-	std::vector<Point3D>	m_verts;
-	std::vector<Point2D>	m_uvs;
-	std::vector<Face>	m_faces;
-	std::vector<Point3D>	m_face_centers;
-	*/

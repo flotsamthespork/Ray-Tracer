@@ -68,10 +68,11 @@ Ray::get_refraction_src() const
 }
 
 void
-Ray::transform(const Matrix4x4 &transform, Ray &ray) const
+Ray::transform(const Matrix4x4 *transform, Ray &ray) const
 {
-	ray.m_pos = transform * m_pos;
-	ray.m_dir = transform * m_dir;
+	ray.m_pos = *transform * m_pos;
+	ray.m_dir = *transform * m_dir;
+	ray.m_normalized = false;
 	// TODO - possibly normalize this..
 }
 

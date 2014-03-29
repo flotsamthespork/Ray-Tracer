@@ -4,6 +4,7 @@
 #include <vector>
 #include "ray.hpp"
 #include "primitive.hpp"
+#include "intersection.hpp"
 
 typedef std::vector<int> Face;
 typedef Face::const_iterator FaceItr;
@@ -15,10 +16,7 @@ public:
 		const Face &polygon);
 
 	virtual void intersection(const Ray *ray,
-			std::vector<IntersectionData> &intersections);
-
-	virtual void get_uv(Point3D point,
-			double *uv);
+			IntersectionHelper *intersections);
 
 private:
 	std::vector<Point3D>	m_verts;
@@ -35,14 +33,14 @@ public:
 			const std::vector<Point2D> &uv,
 			const std::vector<Face>& faces);
 
-	virtual void intersection(const Ray *ray,
-			std::vector<IntersectionData> &intersections);
+	virtual ~Mesh();
 
-	virtual void get_uv(Point3D point,
-			double *uv);
+	virtual void intersection(const Ray *ray,
+			IntersectionHelper *intersections);
 
 private:
-	std::vector<Polygon>	m_polys;
+	IntersectionStrategy	*m_intersect;
+	std::vector<PrimitiveObject*> m_polys;
 
 	// TODO - bounding box (?) or just an IntersectionStrategy
 };

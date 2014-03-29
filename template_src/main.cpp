@@ -27,6 +27,9 @@ int main(int nargs, char **args)
 
 	std::string filename = "test.lua";
 
+	if (nargs >= 2)
+		filename = args[1];
+
 	if (!run_lua(filename))
 	{
 		std::cerr << "Could not open " << filename << std::endl;
