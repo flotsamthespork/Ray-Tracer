@@ -15,7 +15,7 @@ public:
 		const std::vector<Point2D> &uvs,
 		const Face &polygon);
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
 private:
@@ -35,12 +35,16 @@ public:
 
 	virtual ~Mesh();
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
 private:
 	IntersectionStrategy	*m_intersect;
 	std::vector<PrimitiveObject*> m_polys;
+
+	Matrix4x4 m_bounds_trans;
+	Matrix4x4 m_bounds_itrans;
+	Box m_bounds;
 
 	// TODO - bounding box (?) or just an IntersectionStrategy
 };

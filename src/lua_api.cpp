@@ -1189,15 +1189,8 @@ bool run_lua(const std::string& filename)
 		lua_pushstring(L, cur_path.c_str());
 		lua_setfield(L, -2, "path");
 		lua_pop(L, 1);
-
-		std::cout << cur_path << std::endl;
 	}
 
-//	char buf[2048];
-//
-//	getcwd(buf, sizeof(buf));
-//
-//	std::cout << buf << std::endl;
 
 	GRLUA_DEBUG("Parsing the scene");
 	// Now parse the actual scene

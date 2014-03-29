@@ -11,7 +11,7 @@ class Primitive {
 public:
 	virtual ~Primitive() {}
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections) = 0;
 };
 
@@ -25,7 +25,7 @@ public:
 	virtual ~Sphere()
 	{}
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 private:
 	double m_radius;
@@ -41,7 +41,7 @@ public:
 	virtual ~Box()
 	{}
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 private:
 	double m_size;
@@ -60,7 +60,7 @@ public:
 	{
 	}
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
 private:
@@ -81,7 +81,7 @@ public:
 	{
 	}
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
 private:
@@ -102,7 +102,7 @@ public:
 	{
 	}
 
-	virtual void intersection(const Ray *ray,
+	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
 private:

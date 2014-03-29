@@ -14,7 +14,7 @@ static void sphere_uv_map(Vector3D pos,
 	uv[1] = 0.5 - asin(pos[1]) / M_PI;
 }
 
-void
+bool
 Sphere::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
@@ -30,6 +30,9 @@ Sphere::intersection(const Ray *ray,
 	n_roots = quadraticRoots(a,b,c, roots);
 	for (int idx = 0; idx < n_roots; ++idx)
 	{
+		if (!intersections)
+			return true;
+
 		IntersectionData d;
 		d.t = roots[idx];
 
@@ -37,11 +40,14 @@ Sphere::intersection(const Ray *ray,
 		d.normal = ip - Point3D(0,0,0);
 		d.u_tangent = d.normal.cross(Vector3D(0,1,0));
 		sphere_uv_map(d.normal, d.uv);
+
 		intersections->on_intersection(d);
 	}
+
+	return n_roots > 0;
 }
 
-void
+bool
 Box::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
@@ -85,6 +91,9 @@ Box::intersection(const Ray *ray,
 
 	if (intersect)
 	{
+		if (!intersections)
+			return true;
+
 		for (int i = 0; i < 2; ++i)
 		{
 			IntersectionData d;
@@ -143,10 +152,13 @@ Box::intersection(const Ray *ray,
 
 			intersections->on_intersection(d);
 		}
+
+		return true;
 	}
+	return false;
 }
 
-void
+bool
 Cylinder::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
@@ -170,6 +182,9 @@ Cylinder::intersection(const Ray *ray,
 		Point3D ip = p + roots[i]*d;
 		if (std::abs(ip[2]) <= m_length/2)
 		{
+			if (!intersections)
+				return true;
+
 			IntersectionData data;
 			data.t = roots[i];
 
@@ -185,7 +200,7 @@ Cylinder::intersection(const Ray *ray,
 	}
 
 	if (num_i >= 2)
-		return;
+		return true;
 
 	const Vector3D vp = p - Point3D(0,0,0);
 
@@ -197,6 +212,9 @@ Cylinder::intersection(const Ray *ray,
 		Vector3D v = ip - center;
 		if (v.dot(v) <= r_sq)
 		{
+			if (!intersections)
+				return true;
+
 			IntersectionData data;
 			data.t = t;
 			data.normal = -1*norm;
@@ -218,6 +236,9 @@ Cylinder::intersection(const Ray *ray,
 		Vector3D v = ip - center;
 		if (v.dot(v) <= r_sq)
 		{
+			if (!intersections)
+				return true;
+
 			IntersectionData data;
 			data.t = t;
 			data.normal = -1*norm;
@@ -231,9 +252,10 @@ Cylinder::intersection(const Ray *ray,
 	}
 
 
+	return num_i > 0;
 }
 
-void
+bool
 Cone::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
@@ -257,6 +279,9 @@ Cone::intersection(const Ray *ray,
 		Point3D ip = p + roots[i]*d;
 		if (ip[2] >= 0 && ip[2] <= m_length)
 		{
+			if (!intersections)
+				return true;
+
 			IntersectionData data;
 			data.t = roots[i];
 
@@ -273,7 +298,7 @@ Cone::intersection(const Ray *ray,
 	}
 
 	if (num_i >= 2)
-		return;
+		return true;
 
 	const Vector3D vp = p - Point3D(0,0,0);
 
@@ -285,6 +310,9 @@ Cone::intersection(const Ray *ray,
 		Vector3D v = ip - center;
 		if (v.dot(v) <= (m_rad_scale*m_rad_scale*m_length*m_length))
 		{
+			if (!intersections)
+				return true;
+
 			IntersectionData data;
 			data.t = t;
 			data.normal = -1*norm;
@@ -296,9 +324,11 @@ Cone::intersection(const Ray *ray,
 			num_i++;
 		}
 	}
+
+	return num_i > 0;
 }
 
-void
+bool
 Torus::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
@@ -330,6 +360,9 @@ Torus::intersection(const Ray *ray,
 //	int n_roots = quarticRoots(A, B, C, D, roots);
 	for (int idx = 0; idx < n_roots; ++idx)
 	{
+		if (!intersections)
+			return true;
+
 		IntersectionData d;
 		d.t = roots[idx];
 
@@ -352,6 +385,8 @@ Torus::intersection(const Ray *ray,
 
 		intersections->on_intersection(d);
 	}
+
+	return n_roots > 0;
 }
 
 

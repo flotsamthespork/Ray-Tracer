@@ -5,8 +5,6 @@
 
 #include "mesh.hpp"
 
-
-/*
 static void
 eval_min_max(const Point3D &p, Point3D &min, Point3D &max, bool *first)
 {
@@ -34,7 +32,6 @@ find_mid(const Point3D &a, const Point3D &b)
 			(a[1]+b[1])/2,
 			(a[2]+b[2])/2);
 }
-*/
 
 static bool
 triangle_intersection(const Ray *ray,
@@ -76,10 +73,10 @@ Polygon::Polygon(const std::vector<Point3D> &verts,
 			m_uvs.push_back(Point2D(0,0));
 	}
 
-	m_normal = (verts[1] - m_verts[0]).cross(m_verts[m_verts.size()-1] - m_verts[0]);
+	m_normal = (m_verts[1] - m_verts[0]).cross(m_verts[2] - m_verts[0]);
 }
 
-void
+bool
 Polygon::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
@@ -90,10 +87,11 @@ Polygon::intersection(const Ray *ray,
 		if (triangle_intersection(ray, m_verts[0], m_verts[i], m_verts[i+1],
 					beta, gamma))
 		{
+			if (!intersections)
+				return true;
+
 			IntersectionData d;
-
 			d.normal = m_normal;
-
 			d.u_tangent = m_verts[i+1] - m_verts[0];
 
 			Point2D uv0 = m_uvs[0];
@@ -109,26 +107,40 @@ Polygon::intersection(const Ray *ray,
 				(m_normal.dot(ray->get_dir()));
 
 			intersections->on_intersection(d);
-			break;
+			return true;
 		}
 	}
+	return false;
 }
 
 
 Mesh::Mesh(const std::vector<Point3D>& verts,
 		const std::vector<Point2D> &uv,
-		const std::vector<Face>& faces)
+		const std::vector<Face>& faces) :
+	m_bounds(1)
 {
 	m_intersect = new BruteForceStrategy();
 	for (int i = 0; i < faces.size(); ++i)
 	{
-//		Polygon p(verts, uv, faces[i]);
-//		m_polys.push_back(p);
 		Polygon *p = new Polygon(verts, uv, faces[i]);
 		PrimitiveObject *o = new PrimitiveObject(i, NULL, p, NULL);
 		m_polys.push_back(o);
 		m_intersect->add_object(o);
 	}
+
+	bool first = false;
+	Point3D min, max;
+
+	for (int i = 0; i < verts.size(); ++i)
+		eval_min_max(verts[i], min, max, &first);
+
+	Vector3D size = max-min;
+	if (size[0] == 0) size[0] = 0.0000001;
+	if (size[1] == 0) size[1] = 0.0000001;
+	if (size[2] == 0) size[2] = 0.0000001;
+
+	m_bounds_trans = translation(min-Point3D(0,0,0)) * scaling(size);
+	m_bounds_itrans = m_bounds_trans.invert();
 }
 
 Mesh::~Mesh()
@@ -141,22 +153,31 @@ Mesh::~Mesh()
 	delete m_intersect;
 }
 
-void
+bool
 Mesh::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
+	Ray trans_ray;
+	ray->transform(&m_bounds_itrans, trans_ray);
+	if (!m_bounds.intersection(&trans_ray, NULL))
+		return false;
+
 	Intersection *i = intersections->get_intersection();
 	IntersectionCache *old_cache = i->swap_cache(intersections->get_cache(m_polys.size()));
 
 	std::vector<IntersectionData> inters;
 	m_intersect->get_intersections(ray, inters, i);
 
+	bool intersect = false;
 	for (int j = 0; j < inters.size(); ++j)
 	{
 		intersections->on_intersection(inters[j]);
+		intersect = true;
 	}
 
 	i->swap_cache(old_cache);
+
+	return intersect;
 }
 
 
