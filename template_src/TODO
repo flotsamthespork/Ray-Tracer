@@ -1,4 +1,0 @@
-1) Implement the lua stuff for a simple material
-2) Copy the nonhier.lua stuff into test.lua (with appropriate changes)
-3) Get sphere intersection working
-4) Get some tangible evidence that this actually traces rays!
