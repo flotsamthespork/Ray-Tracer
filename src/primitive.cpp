@@ -1,5 +1,6 @@
 
 #include <cmath>
+#include <float.h>
 #include "polyroots.hpp"
 #include "scene.hpp"
 
@@ -44,6 +45,105 @@ void
 Box::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {
+	double t1, t2;
+	double t[2];
+	t[0] = -DBL_MAX;
+	t[1] = DBL_MAX;
+
+	const Point3D &ray_pos = ray->get_pos();
+	const Vector3D &ray_dir = ray->get_dir();
+
+	const Point3D pnear = Point3D(0,0,0);
+	const Point3D pfar(m_size,m_size,m_size);
+
+	bool intersect = true;
+	for (int i = 0; intersect && i < 3; ++i)
+	{
+		if (ray_dir[i] == 0)
+		{
+			if (ray_pos[i] < pnear[i] || ray_pos[i] > pfar[i])
+				intersect = false;
+		}
+		else
+		{
+			t1 = (pnear[i] - ray_pos[i]) / ray_dir[i];
+			t2 = (pfar[i] - ray_pos[i]) / ray_dir[i];
+			if (t1 > t2)
+			{
+				double tmp = t1;
+				t1 = t2;
+				t2 = tmp;
+			}
+			t[0] = std::max(t[0], t1);
+			t[1] =  std::min(t[1], t2);
+			if (t[0] > t[1])
+				intersect = false;
+			if (t[1] < 0)
+				intersect = false;
+		}
+	}
+
+	if (intersect)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			IntersectionData d;
+			d.t = t[i];
+
+//			data.normal = -1*norm;
+//			data.u_tangent = Vector3D(1,0,0);
+//			data.uv[0] = 0.5 + 0.5*ip[0]/m_radius;
+//			data.uv[1] = 0.5 - 0.5*ip[1]/m_radius;
+			const Point3D ip = ray_pos + d.t*ray_dir;
+
+#define EPSILON 0.0000001
+
+			if (std::abs(ip[0]-pnear[0]) < EPSILON)
+			{
+				d.normal = Vector3D(-1,0,0);
+				d.u_tangent = Vector3D(0,0,1);
+				d.uv[0] = (ip[2])/m_size;
+				d.uv[1] = (m_size-ip[1])/m_size;
+			}
+			else if (std::abs(ip[0]-pfar[0]) < EPSILON)
+			{
+				d.normal = Vector3D(1,0,0);
+				d.u_tangent = Vector3D(0,0,-1);
+				d.uv[0] = (m_size-ip[2])/m_size;
+				d.uv[1] = (m_size-ip[1])/m_size;
+			}
+			else if (std::abs(ip[1]-pnear[1]) < EPSILON)
+			{
+				d.normal = Vector3D(0,-1,0);
+				d.u_tangent =Vector3D(1,0,0);
+				d.uv[0] = (m_size-ip[0])/m_size;
+				d.uv[1] = (m_size-ip[2])/m_size;
+			}
+			else if (std::abs(ip[1]-pfar[1]) < EPSILON)
+			{
+				d.normal = Vector3D(0,1,0);
+				d.u_tangent =Vector3D(-1,0,0);
+				d.uv[0] = (ip[0])/m_size;
+				d.uv[1] = (m_size-ip[2])/m_size;
+			}
+			else if (std::abs(ip[2]-pnear[2]) < EPSILON)
+			{
+				d.normal = Vector3D(0,0,-1);
+				d.u_tangent = Vector3D(1,0,0);
+				d.uv[0] = (m_size-ip[0])/m_size;
+				d.uv[1] = (m_size-ip[1])/m_size;
+			}
+			else
+			{
+				d.normal = Vector3D(0,0,1);
+				d.u_tangent = Vector3D(-1,0,0);
+				d.uv[0] = (ip[0])/m_size;
+				d.uv[1] = (m_size-ip[1])/m_size;
+			}
+
+			intersections->on_intersection(d);
+		}
+	}
 }
 
 void
@@ -81,25 +181,6 @@ Cylinder::intersection(const Ray *ray,
 		
 			intersections->on_intersection(data);
 			num_i++;
-		}
-		else
-		{
-/*			IntersectionData data;
-			if (ip[2] < 0)
-				data.t = ((-m_length/2)-p[2])/d[2];
-			else
-		//		data.t = ((m_length/2)-p[2])/d[2];
-				continue;
-			ip = p + data.t*d;
-
-			data.normal = Vector3D(0,0,ip[2]);
-			data.u_tangent = Vector3D(1,0,0);
-
-			data.uv[0] = 0.5 + ip[0]/m_length;
-			data.uv[1] = 0.5 + ip[1]/m_length;
-
-			intersections->on_intersection(data);
-*/
 		}
 	}
 
@@ -150,7 +231,71 @@ Cylinder::intersection(const Ray *ray,
 	}
 
 
-	// TODO - count the number of intersections. if == 2, return; else check endcaps
+}
+
+void
+Cone::intersection(const Ray *ray,
+		IntersectionHelper *intersections)
+{
+	double roots[2];
+	int n_roots;
+
+	const Point3D &p = ray->get_pos();
+	const Vector3D &d = ray->get_dir();
+
+	const double r_sq = m_rad_scale*m_rad_scale;
+
+	const double a = d[0]*d[0] + d[1]*d[1] - r_sq*d[2]*d[2];
+	const double b = 2*(d[0]*p[0] + d[1]*p[1] - r_sq*d[2]*p[2]);
+	const double c = p[0]*p[0] + p[1]*p[1] - r_sq*p[2]*p[2];
+
+	int num_i = 0;
+
+	n_roots = quadraticRoots(a,b,c, roots);
+	for (int i = 0; i < n_roots; ++i)
+	{
+		Point3D ip = p + roots[i]*d;
+		if (ip[2] >= 0 && ip[2] <= m_length)
+		{
+			IntersectionData data;
+			data.t = roots[i];
+
+			data.u_tangent = ip - Point3D(0,0,0);
+			data.normal = data.u_tangent.cross(Vector3D(0,0,-1));
+			data.normal = data.normal.cross(data.u_tangent);
+
+			data.uv[0] = ip[2]/m_length;
+			data.uv[1] = 0.5 - atan2(ip[1], ip[0]) / (2.0*M_PI);
+		
+			intersections->on_intersection(data);
+			num_i++;
+		}
+	}
+
+	if (num_i >= 2)
+		return;
+
+	const Vector3D vp = p - Point3D(0,0,0);
+
+	{
+		Vector3D norm(0,0,-1);
+		Point3D center(0,0,m_length);
+		const double t = (-std::abs(center[2])-(norm.dot(vp))) / norm.dot(d);
+		Point3D ip = p + t*d;
+		Vector3D v = ip - center;
+		if (v.dot(v) <= (m_rad_scale*m_rad_scale*m_length*m_length))
+		{
+			IntersectionData data;
+			data.t = t;
+			data.normal = -1*norm;
+			data.u_tangent = Vector3D(1,0,0);
+			data.uv[0] = 0.5 + 0.5*ip[0]/(m_rad_scale*m_length);
+			data.uv[1] = 0.5 - 0.5*ip[1]/(m_rad_scale*m_length);
+
+			intersections->on_intersection(data);
+			num_i++;
+		}
+	}
 }
 
 void

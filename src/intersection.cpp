@@ -193,6 +193,9 @@ SpatialSubdivisionStrategy::get_intersections(const Ray *ray,
 		std::vector<IntersectionData> &intersections,
 		Intersection *i)
 {
+	(void)ray;
+	(void)intersections;
+	(void)i;
 	// TODO - use the grid regions to find a nice intersection..
 }
 
@@ -200,6 +203,7 @@ SpatialSubdivisionStrategy::get_intersections(const Ray *ray,
 void
 SpatialSubdivisionStrategy::do_add_object(SceneObject *object)
 {
+	(void)object;
 	// TODO - add it to the appropriate regions
 }
 

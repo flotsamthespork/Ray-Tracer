@@ -18,6 +18,9 @@ public:
 
 	virtual void bump(Vector3D &normal, Vector3D u_tangent, double *uv)
 	{
+		(void) normal;
+		(void) u_tangent;
+		(void) uv;
 	}
 
 	virtual bool compute_uv()

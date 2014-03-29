@@ -90,9 +90,6 @@ RayTracer::trace_px(const int px,
 	// TODO - background color
 	Colour ray_color(0);
 
-	if (x == 250 && y == 250)
-		std::cout << "W" << std::endl;
-
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
 	Vector3D ray_dir = ray_pos - m_camera->get_pos();
 

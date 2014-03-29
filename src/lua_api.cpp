@@ -365,6 +365,32 @@ int scene_f_sphere_cmd(lua_State *L)
 }
 
 extern "C"
+int scene_f_box_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	int nargs = lua_gettop(L);
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char *name = (nargs >= 1 ? luaL_checkstring(L, 1) : "");
+	double size;
+	if (nargs >= 2)
+		size = luaL_checknumber(L, 2);
+	else
+		size = 1;
+
+	Primitive *p = new Box(size);
+	data->node = new GeometryNode(name, p);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+extern "C"
 int scene_f_cylinder_cmd(lua_State *L)
 {
 	GRLUA_DEBUG_CALL;
@@ -388,6 +414,38 @@ int scene_f_cylinder_cmd(lua_State *L)
 		length = 2;
 
 	Primitive *p = new Cylinder(radius, length);
+	data->node = new GeometryNode(name, p);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+extern "C"
+int scene_f_cone_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	int nargs = lua_gettop(L);
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char *name = (nargs >= 1 ? luaL_checkstring(L, 1) : "");
+	double radius;
+	if (nargs >= 2)
+		radius = luaL_checknumber(L, 2);
+	else
+		radius = 1;
+
+	double length;
+	if (nargs >= 3)
+		length = luaL_checknumber(L, 3);
+	else
+		length = 2;
+
+	Primitive *p = new Cone(radius, length);
 	data->node = new GeometryNode(name, p);
 
 	luaL_getmetatable(L, SCENE_META);
@@ -639,7 +697,9 @@ static const luaL_reg scenelib_functions[] = {
 	// TODO - primitives
 	{"csg",		scene_f_csg_cmd},
 	{"sphere",	scene_f_sphere_cmd},
+	{"box",		scene_f_box_cmd},
 	{"cylinder",	scene_f_cylinder_cmd},
+	{"cone",	scene_f_cone_cmd},
 	{"torus",	scene_f_torus_cmd},
 	{"mesh",	scene_f_mesh_cmd},
 	{0, 0}

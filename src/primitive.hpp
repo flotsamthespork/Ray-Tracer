@@ -69,6 +69,27 @@ private:
 };
 
 
+class Cone : public Primitive {
+public:
+	Cone(double radius, double length) :
+		m_rad_scale(radius/length),
+		m_length(length)
+	{
+	}
+
+	virtual ~Cone()
+	{
+	}
+
+	virtual void intersection(const Ray *ray,
+			IntersectionHelper *intersections);
+
+private:
+	double m_rad_scale;
+	double m_length;
+};
+
+
 class Torus : public Primitive {
 public:
 	Torus(double inner_rad, double outer_rad) :
