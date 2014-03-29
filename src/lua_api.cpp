@@ -41,6 +41,7 @@
 #include <cstring>
 #include <cstdio>
 #include <vector>
+#include <unistd.h>
 #include "lua488.hpp"
 #include "scene_tree.hpp"
 #include "tracer.hpp"
@@ -364,6 +365,38 @@ int scene_f_sphere_cmd(lua_State *L)
 }
 
 extern "C"
+int scene_f_cylinder_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	int nargs = lua_gettop(L);
+
+	scene_node_ud *data = (scene_node_ud*)lua_newuserdata(L, sizeof(scene_node_ud));
+	data->node = 0;
+
+	const char *name = (nargs >= 1 ? luaL_checkstring(L, 1) : "");
+	double radius;
+	if (nargs >= 2)
+		radius = luaL_checknumber(L, 2);
+	else
+		radius = 1;
+
+	double length;
+	if (nargs >= 3)
+		length = luaL_checknumber(L, 3);
+	else
+		length = 2;
+
+	Primitive *p = new Cylinder(radius, length);
+	data->node = new GeometryNode(name, p);
+
+	luaL_getmetatable(L, SCENE_META);
+	lua_setmetatable(L, -2);
+
+	return 1;
+}
+
+extern "C"
 int scene_f_torus_cmd(lua_State *L)
 {
 	GRLUA_DEBUG_CALL;
@@ -606,6 +639,7 @@ static const luaL_reg scenelib_functions[] = {
 	// TODO - primitives
 	{"csg",		scene_f_csg_cmd},
 	{"sphere",	scene_f_sphere_cmd},
+	{"cylinder",	scene_f_cylinder_cmd},
 	{"torus",	scene_f_torus_cmd},
 	{"mesh",	scene_f_mesh_cmd},
 	{0, 0}
@@ -1075,6 +1109,35 @@ bool run_lua(const std::string& filename)
 	make_tracer_lib(L);
 	make_color_lib(L);
 	make_material_lib(L);
+
+	unsigned last_slash = filename.find_last_of("/\\");
+
+	if (last_slash != std::string::npos)
+	{
+		char buf[2048];
+		getcwd(buf, sizeof(buf));
+
+		lua_getglobal(L, "package");
+		lua_getfield(L, -1, "path");
+		std::string cur_path = lua_tostring(L, -1);
+		cur_path.append(";");
+		cur_path.append(buf);
+		cur_path.append("/");
+		cur_path.append(filename.substr(0,last_slash));
+		cur_path.append("/?.lua");
+		lua_pop(L, 1);
+		lua_pushstring(L, cur_path.c_str());
+		lua_setfield(L, -2, "path");
+		lua_pop(L, 1);
+
+		std::cout << cur_path << std::endl;
+	}
+
+//	char buf[2048];
+//
+//	getcwd(buf, sizeof(buf));
+//
+//	std::cout << buf << std::endl;
 
 	GRLUA_DEBUG("Parsing the scene");
 	// Now parse the actual scene

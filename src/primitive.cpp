@@ -47,6 +47,113 @@ Box::intersection(const Ray *ray,
 }
 
 void
+Cylinder::intersection(const Ray *ray,
+		IntersectionHelper *intersections)
+{
+	double roots[2];
+	int n_roots;
+
+	const Point3D &p = ray->get_pos();
+	const Vector3D &d = ray->get_dir();
+
+	const double r_sq = m_radius*m_radius;
+
+	const double a = d[0]*d[0] + d[1]*d[1];
+	const double b = 2*(d[0]*p[0] + d[1]*p[1]);
+	const double c = p[0]*p[0] + p[1]*p[1] - r_sq;
+
+	int num_i = 0;
+
+	n_roots = quadraticRoots(a,b,c, roots);
+	for (int i = 0; i < n_roots; ++i)
+	{
+		Point3D ip = p + roots[i]*d;
+		if (std::abs(ip[2]) <= m_length/2)
+		{
+			IntersectionData data;
+			data.t = roots[i];
+
+			data.normal = ip - Point3D(0, 0, ip[2]);
+			data.u_tangent = Vector3D(0, 0, 1);
+
+			data.uv[0] = 0.5 + ip[2]/m_length;
+			data.uv[1] = 0.5 - atan2(ip[1], ip[0]) / (2.0*M_PI);
+		
+			intersections->on_intersection(data);
+			num_i++;
+		}
+		else
+		{
+/*			IntersectionData data;
+			if (ip[2] < 0)
+				data.t = ((-m_length/2)-p[2])/d[2];
+			else
+		//		data.t = ((m_length/2)-p[2])/d[2];
+				continue;
+			ip = p + data.t*d;
+
+			data.normal = Vector3D(0,0,ip[2]);
+			data.u_tangent = Vector3D(1,0,0);
+
+			data.uv[0] = 0.5 + ip[0]/m_length;
+			data.uv[1] = 0.5 + ip[1]/m_length;
+
+			intersections->on_intersection(data);
+*/
+		}
+	}
+
+	if (num_i >= 2)
+		return;
+
+	const Vector3D vp = p - Point3D(0,0,0);
+
+	{
+		Vector3D norm(0,0,1);
+		Point3D center(0,0,-m_length/2);
+		const double t = (-std::abs(center[2])-(norm.dot(vp))) / norm.dot(d);
+		Point3D ip = p + t*d;
+		Vector3D v = ip - center;
+		if (v.dot(v) <= r_sq)
+		{
+			IntersectionData data;
+			data.t = t;
+			data.normal = -1*norm;
+			data.u_tangent = Vector3D(1,0,0);
+			data.uv[0] = 0.5 + 0.5*ip[0]/m_radius;
+			data.uv[1] = 0.5 - 0.5*ip[1]/m_radius;
+
+			intersections->on_intersection(data);
+			num_i++;
+		}
+	}
+
+	if (num_i < 2)
+	{
+		Vector3D norm(0,0,-1);
+		Point3D center(0,0,m_length/2);
+		const double t = (-std::abs(center[2])-(norm.dot(vp))) / norm.dot(d);
+		Point3D ip = p + t*d;
+		Vector3D v = ip - center;
+		if (v.dot(v) <= r_sq)
+		{
+			IntersectionData data;
+			data.t = t;
+			data.normal = -1*norm;
+			data.u_tangent = Vector3D(1,0,0);
+			data.uv[0] = 0.5 + 0.5*ip[0]/m_radius;
+			data.uv[1] = 0.5 - 0.5*ip[1]/m_radius;
+
+			intersections->on_intersection(data);
+			num_i++;
+		}
+	}
+
+
+	// TODO - count the number of intersections. if == 2, return; else check endcaps
+}
+
+void
 Torus::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
 {

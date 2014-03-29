@@ -48,6 +48,27 @@ private:
 };
 
 
+class Cylinder : public Primitive {
+public:
+	Cylinder(double radius, double length) :
+		m_radius(radius),
+		m_length(length)
+	{
+	}
+
+	virtual ~Cylinder()
+	{
+	}
+
+	virtual void intersection(const Ray *ray,
+			IntersectionHelper *intersections);
+
+private:
+	double m_radius;
+	double m_length;
+};
+
+
 class Torus : public Primitive {
 public:
 	Torus(double inner_rad, double outer_rad) :
