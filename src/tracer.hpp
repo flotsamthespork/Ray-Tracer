@@ -5,6 +5,7 @@
 #include "image.hpp"
 #include "intersection.hpp"
 #include "scene.hpp"
+#include "jitter.hpp"
 
 struct JobData;
 
@@ -22,6 +23,9 @@ private:
 	int m_img_height;
 	Matrix4x4 m_px_to_wcs;
 
+	// Soft Shadow samples
+	int m_ss_samples;
+
 	bool ray(const Ray *ray, Colour &ray_color,
 			JobData *data);
 public:
@@ -32,6 +36,7 @@ public:
 
 	void set_ambient(Colour &color);
 	void set_num_threads(const int num_threads);
+	void set_light_samples(const int samples);
 
 	void render(const int cam_id, const std::string img_name,
 			const int width, const int height);

@@ -617,7 +617,9 @@ int scene_m_light_pos_cmd(lua_State *L)
 	GRLUA_DEBUG_CALL;
 
 	LightNode *light = get_light_node(L);
-	get_tuple(L, 2, &light->position[0], 3);
+	Point3D pos;
+	get_tuple(L, 2, &pos[0], 3);
+	light->jitter.set_pos(pos);
 	return 0;
 }
 
@@ -628,6 +630,22 @@ int scene_m_light_falloff_cmd(lua_State *L)
 
 	LightNode *light = get_light_node(L);
 	get_tuple(L, 2, light->falloff, 3);
+	return 0;
+}
+
+extern "C"
+int scene_m_light_area_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	LightNode *light = get_light_node(L);
+	Vector3D uvec, vvec;
+	get_tuple(L, 2, &uvec[0], 3);
+	get_tuple(L, 3, &vvec[0], 3);
+
+	light->jitter.set_uvec(uvec);
+	light->jitter.set_vvec(vvec);
+	light->jitter.set_shape(JITTER_RECTANGLE);
 	return 0;
 }
 
@@ -717,6 +735,7 @@ static const luaL_reg scenelib_methods[] = {
 	{"light_color",		scene_m_light_color_cmd},
 	{"light_position",	scene_m_light_pos_cmd},
 	{"light_falloff",	scene_m_light_falloff_cmd},
+	{"light_area",		scene_m_light_area_cmd},
 	// Camera Node
 	{"cam_position",	scene_m_cam_pos_cmd},
 	{"cam_up",		scene_m_cam_up_cmd},

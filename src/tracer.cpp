@@ -7,6 +7,8 @@
 
 #include "tracer.hpp"
 
+#define AA 2
+#define AA_STEP (1.0/AA)
 
 RayTracer::RayTracer(Scene *scene,
 		IntersectionStrategy *is) :
@@ -17,6 +19,7 @@ RayTracer::RayTracer(Scene *scene,
 	m_camera(0)
 {
 	scene->fill(is);
+	set_light_samples(1); // TODO - change this to 1
 }
 
 RayTracer::~RayTracer()
@@ -37,6 +40,12 @@ RayTracer::set_num_threads(const int num_threads)
 {
 	if (num_threads >= 1)
 		m_num_threads = num_threads;
+}
+void
+RayTracer::set_light_samples(const int samples)
+{
+	m_ss_samples = std::max(1,samples);
+	m_scene->set_light_samples(m_ss_samples);
 }
 
 IntersectionStrategy*
@@ -90,17 +99,45 @@ RayTracer::trace_px(const int px,
 	// TODO - background color
 	Colour ray_color(0);
 
+#if !(AA)
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
 	Vector3D ray_dir = ray_pos - m_camera->get_pos();
 
 	Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
 
 	ray(&r, ray_color, data);
+#else
 
-#define SAMPLES 2
-/*
-	const double d = 1.0/SAMPLES;
+	
 
+//#define SAMPLES 2
+//	const double d = 1.0/SAMPLES;
+//#define AA 0
+//#define AA_STEP (1.0/AA)
+
+	Jitter jt(Point3D(x,y,0),
+			Vector3D(1,0,0),
+			Vector3D(0,1,0));
+	jt.set_shape(JITTER_RECTANGLE);
+	jt.set_ustep(AA_STEP);
+	jt.set_vstep(AA_STEP);
+
+	for (int i = 0; i < AA; ++i)
+	{
+		for (int j = 0; j < AA; ++j)
+		{
+			Colour c(0);
+			Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+i)*AA_STEP, (0.5+j)*AA_STEP);
+			Vector3D ray_dir = ray_pos - m_camera->get_pos();
+
+			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
+			ray(&r, c, data);
+
+			ray_color = ray_color + 1.0/(AA*AA)*c;
+		}
+	}
+
+	/*
 	for (int i = 0; i < SAMPLES; ++i)
 	{
 		for (int j = 0; j < SAMPLES; ++j)
@@ -114,8 +151,9 @@ RayTracer::trace_px(const int px,
 
 			ray_color = ray_color + 1.0/(SAMPLES*SAMPLES)*c;
 		}
-	}
-*/
+	*/
+
+#endif
 	(*m_img)(x,y,0) = ray_color.R();
 	(*m_img)(x,y,1) = ray_color.G();
 	(*m_img)(x,y,2) = ray_color.B();
@@ -174,8 +212,67 @@ RayTracer::light(const Ray *light_ray,
 	const int nlights = m_scene->get_light_count();
 	for (int idx = 0; idx < nlights; ++idx)
 	{
+		double light_contribution;
+		int n_samples;
 		const Light *l = m_scene->get_light(idx);
-		Vector3D light_dir = l->position - point;
+		if (l->jitter.get_shape() == JITTER_POINT)
+		{
+			light_contribution = 1;
+			n_samples = 1;
+		}
+		else
+		{
+			n_samples = m_ss_samples;
+			light_contribution = 1.0/(n_samples*n_samples);
+		}
+
+		for (int u = 0; u < n_samples; ++u)
+		{
+			for (int v = 0; v < n_samples; ++v)
+			{
+				double ju = ((double)u)/n_samples-0.5;
+				double jv = ((double)v)/n_samples-0.5;
+				Vector3D light_dir = l->jitter.jitter(ju, jv) - point;
+				const double r = light_dir.length();
+				light_dir.normalize();
+
+				const double nl = light_dir.dot(normal);
+
+				// Light is behind
+				if (nl < 0)
+					continue;
+
+				Ray shadow_ray(point, light_dir, 1, 1, NULL, true);
+				Intersection light_i(data);
+				m_intersect->get_intersection(&shadow_ray, &light_i);
+
+				// Somthing is between light and object
+				if (light_i.intersects() &&
+					light_i.get_data().t < r)
+					continue;
+				
+				Vector3D light_view_vec = view_dir + light_dir;
+				light_view_vec.normalize();
+
+				Colour c = l->color;
+				c = (nl /
+					(l->falloff[0] +
+					 l->falloff[1]*r +
+					 l->falloff[2]*r*r)) * c;
+
+				if (cm_s)
+				{
+					Vector3D r_vec = (2*nl)*normal - light_dir;
+					const double rv = std::max(0.0, r_vec.dot(light_view_vec));
+					specular_color = specular_color +
+						light_contribution*(pow(rv,shiny) / nl)*ks*c;
+				}
+
+				diffuse_color = diffuse_color + light_contribution*kd*c;
+			}
+		}
+/*
+		Vector3D light_dir = l->jitter.jitter(0,0) - point;
 		const double r = light_dir.length();
 		light_dir.normalize();
 
@@ -211,6 +308,7 @@ RayTracer::light(const Ray *light_ray,
 		}
 
 		diffuse_color = diffuse_color + kd*c;
+		*/
 	}
 
 	const double power = light_ray->get_power();

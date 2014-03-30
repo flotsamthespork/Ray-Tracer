@@ -254,8 +254,9 @@ IntersectionHelper::get_cache(int size)
 
 Light::Light(LightNode *node, const Matrix4x4 &trans) :
 	color(node->color),
-	position(trans*node->position)
+	jitter(node->jitter)
 {
+	jitter.transform(trans);
 	falloff[0] = node->falloff[0];
 	falloff[1] = node->falloff[1];
 	falloff[2] = node->falloff[2];
@@ -354,6 +355,18 @@ Scene::fill(IntersectionStrategy *is)
 		is->add_object(*i);
 	}
 	is->finish();
+}
+
+void
+Scene::set_light_samples(int ss_samples)
+{
+	const double step = 1.0/ss_samples;
+	for (std::vector<Light*>::iterator i = m_lights.begin();
+			i != m_lights.end(); ++i)
+	{
+		(*i)->jitter.set_ustep(step);
+		(*i)->jitter.set_vstep(step);
+	}
 }
 
 int

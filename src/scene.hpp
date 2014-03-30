@@ -8,6 +8,7 @@
 #include "primitive.hpp"
 #include "scene_tree.hpp"
 #include "bounds.hpp"
+#include "jitter.hpp"
 
 
 class Ray;
@@ -151,7 +152,7 @@ protected:
 	Light(LightNode *node, const Matrix4x4 &trans);
 public:
 	const Colour color;
-	const Point3D position;
+	Jitter jitter;
 	double falloff[3];
 
 	friend class Scene;
@@ -200,6 +201,8 @@ public:
 	virtual ~Scene();
 
 	void fill(IntersectionStrategy *is);
+
+	void set_light_samples(int ss_samples);
 
 	Camera *get_camera(const int cam_id);
 

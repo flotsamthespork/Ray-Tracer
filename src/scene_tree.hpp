@@ -5,6 +5,7 @@
 #include "algebra.hpp"
 #include "primitive.hpp"
 #include "material.hpp"
+#include "jitter.hpp"
 
 enum NodeType {
 	NODE,
@@ -20,6 +21,7 @@ enum CsgOp {
 	INTERSECTION,
 	DIFFERENCE
 };
+
 
 class SceneNode {
 public:
@@ -114,8 +116,8 @@ public:
 class LightNode : public SceneNode {
 public:
 	Colour color;
-	Point3D position;
 	double falloff[3];
+	Jitter jitter;
 
 	LightNode(const std::string &name);
 	virtual ~LightNode();

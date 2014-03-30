@@ -35,7 +35,6 @@ Intersection::Intersection(JobData *data,
 {
 	if (m_cache)
 		m_cache->increment_cache_version();
-	// TODO - possibly increment the cache in here.
 }
 
 
@@ -179,7 +178,6 @@ IntersectionStrategy::get_intersection(const Ray *ray, Intersection *i)
 void
 IntersectionStrategy::add_object(SceneObject *object)
 {
-	// TODO - assign the object an ID (?)
 	m_object_count++;
 	do_add_object(object);
 }
@@ -233,6 +231,7 @@ SpatialSubdivisionStrategy::get_intersections(const Ray *ray,
 		std::vector<IntersectionData> &intersections,
 		Intersection *i)
 {
+	// TODO initial check for nx=ny=nz = 1 (then just check the cell and leave!)
 	double tx, ty, tz;
 	const Point3D &ray_pos = ray->get_pos();
 	const Vector3D &ray_dir = ray->get_dir();
@@ -265,12 +264,6 @@ SpatialSubdivisionStrategy::get_intersections(const Ray *ray,
 		t_values.push_back((bottom-ray_pos[1])/ray_dir[1]);
 		t_values.push_back((front-ray_pos[2])/ray_dir[2]);
 		t_values.push_back((back-ray_pos[2])/ray_dir[2]);
-//		t_values.push_back((left-ray_pos[0])/ray_dir[0]);
-//		t_values.push_back((right-ray_pos[0])/ray_dir[0]);
-//		t_values.push_back((top-ray_pos[1])/ray_dir[1]);
-//		t_values.push_back((bottom-ray_pos[1])/ray_dir[1]);
-//		t_values.push_back((front-ray_pos[2])/ray_dir[2]);
-//		t_values.push_back((back-ray_pos[2])/ray_dir[2]);
 
 		std::sort(t_values.begin(), t_values.end());
 
@@ -295,53 +288,55 @@ SpatialSubdivisionStrategy::get_intersections(const Ray *ray,
 
 		if (!success)
 			return;
-		// TODO - find new initial ix, iy, iz
 	}
+
+	int nix = ix+stepx;
+	int niy = iy+stepy;
+	int niz = iz+stepz;
+	int checkx = ix+std::max(0, stepx);
+	int checky = iy+std::max(0, stepy);
+	int checkz = iz+std::max(0, stepz);
+
+	tx = ((left  +(m_xs*checkx)/m_nx)-ray_pos[0])/ray_dir[0];
+	ty = ((bottom+(m_ys*checky)/m_ny)-ray_pos[1])/ray_dir[1];
+	tz = ((front +(m_zs*checkz)/m_nz)-ray_pos[2])/ray_dir[2];
 
 	while (true)
 	{
-		const int nix = ix+stepx;
-		const int niy = iy+stepy;
-		const int niz = iz+stepz;
-
-		const bool out_x = nix < 0 || nix >= m_nx;
-		const bool out_y = niy < 0 || niy >= m_ny;
-		const bool out_z = niz < 0 || niz >= m_nz;
-
-		if (out_x) tx = DBL_MAX;
-		else if (stepx < 0)	tx = -(ray_pos[0]-(left+(m_xs*ix)/m_nx))/ray_dir[0];
-		else			tx = -(ray_pos[0]-(left+(m_xs*nix)/m_nx))/ray_dir[0];
-		if (out_y) ty = DBL_MAX;
-		else if (stepy < 0)	ty = -(ray_pos[1]-(bottom+(m_ys*iy)/m_ny))/ray_dir[1];
-		else			ty = -(ray_pos[1]-(bottom+(m_ys*niy)/m_ny))/ray_dir[1];
-		if (out_z) tz = DBL_MAX;
-		else if (stepz < 0)	tz = -(ray_pos[2]-(front+(m_zs*iz)/m_nz))/ray_dir[2];
-		else			tz = -(ray_pos[2]-(front+(m_zs*niz)/m_nz))/ray_dir[2];
-
 		IntersectionStrategy *is = m_grid[ix][iy][iz];
 		if (is)
 		{
 			is->get_intersections(ray, intersections, i);
 		}
 
-		if (tx <=ty && tx <= tz)
+		if (tz <= tx && tz <= ty)
 		{
-			if (out_x)
+			if (niz < 0 || niz >= m_nz)
 				break;
-			ix = nix;
+			iz = niz;
+			niz = iz+stepz;
+			checkz = iz+std::max(0,stepz);
+			tz = ((front +(m_zs*checkz)/m_nz)-ray_pos[2])/ray_dir[2];
 		}
-		else if (ty <= tz)
+		else if (ty <= tx)
 		{
-			if (out_y)
+			if (niy < 0 || niy >= m_ny)
 				break;
 			iy = niy;
+			niy = iy+stepy;
+			checky = iy+std::max(0,stepy);
+			ty = ((bottom+(m_ys*checky)/m_ny)-ray_pos[1])/ray_dir[1];
 		}
 		else
 		{
-			if (out_z)
+			if (nix < 0 || nix >= m_nx)
 				break;
-			iz = niz;
+			ix = nix;
+			nix = ix+stepx;
+			checkx = ix+std::max(0,stepx);
+			tx = ((left  +(m_xs*checkx)/m_nx)-ray_pos[0])/ray_dir[0];
 		}
+
 
 	}
 }
@@ -402,8 +397,8 @@ SpatialSubdivisionStrategy::finish()
 					m_grid[x][y][z]->finish();
 
 
-	// TODO - check that bounds[i].m_type != UNSET
-	//	* if it is unset we don't even have to add it!
+	// TODO - this /shouldnt/ break anything
+	m_all_objects.clear();
 }
 
 void
@@ -425,7 +420,7 @@ SpatialSubdivisionStrategy::setup_grid()
 	if (m_zs == 0) zs = m_zs = 0.1;
 
 	// TODO - find some optimal value for this... (for the cow a multiple speeds it up by up to 4x)
-	const int desired_divisions = (int) ceil(sqrt((double)m_all_objects.size()));
+	const int desired_divisions = (int) ceil(sqrt((double)m_all_objects.size()))*100;
 //	const int desired_divisions = m_all_objects.size()*100;
 
 	while (m_nx*m_ny*m_nz < desired_divisions)
