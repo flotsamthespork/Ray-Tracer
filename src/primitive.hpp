@@ -4,7 +4,9 @@
 #include <vector>
 #include "algebra.hpp"
 #include "ray.hpp"
+#include "bounds.hpp"
 
+class IntersectionStrategy;
 class IntersectionHelper;
 
 class Primitive {
@@ -13,6 +15,13 @@ public:
 
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections) = 0;
+
+	virtual void get_bounds(Bounds &b) = 0;
+
+	virtual void finish(IntersectionStrategy *is)
+	{
+		(void)is;
+	}
 };
 
 
@@ -27,6 +36,8 @@ public:
 
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
+
+	virtual void get_bounds(Bounds &b);
 private:
 	double m_radius;
 };
@@ -43,6 +54,8 @@ public:
 
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
+
+	virtual void get_bounds(Bounds &b);
 private:
 	double m_size;
 };
@@ -63,6 +76,7 @@ public:
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
+	virtual void get_bounds(Bounds &b);
 private:
 	double m_radius;
 	double m_length;
@@ -84,6 +98,7 @@ public:
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
+	virtual void get_bounds(Bounds &b);
 private:
 	double m_rad_scale;
 	double m_length;
@@ -105,6 +120,7 @@ public:
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
+	virtual void get_bounds(Bounds &b);
 private:
 	double m_inner_rad;
 	double m_outer_rad;

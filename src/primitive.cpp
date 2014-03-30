@@ -47,6 +47,12 @@ Sphere::intersection(const Ray *ray,
 	return n_roots > 0;
 }
 
+void
+Sphere::get_bounds(Bounds &b)
+{
+	b.set_sphere(Point3D(0,0,0), m_radius);
+}
+
 bool
 Box::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
@@ -158,6 +164,15 @@ Box::intersection(const Ray *ray,
 	return false;
 }
 
+void
+Box::get_bounds(Bounds &b)
+{
+	if (m_size < 0)
+		b.set_box(Point3D(m_size,m_size,m_size), Point3D(0,0,0));
+	else
+		b.set_box(Point3D(0,0,0), Point3D(m_size,m_size,m_size));
+}
+
 bool
 Cylinder::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
@@ -255,6 +270,13 @@ Cylinder::intersection(const Ray *ray,
 	return num_i > 0;
 }
 
+void
+Cylinder::get_bounds(Bounds &b)
+{
+	b.set_box(Point3D(-m_radius,-m_radius,-m_length/2),
+			Point3D(m_radius,m_radius,m_length/2));
+}
+
 bool
 Cone::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
@@ -328,6 +350,14 @@ Cone::intersection(const Ray *ray,
 	return num_i > 0;
 }
 
+void
+Cone::get_bounds(Bounds &b)
+{
+	const double radius = m_rad_scale*m_length;
+	b.set_box(Point3D(-radius,-radius, 0),
+			Point3D(radius,radius,m_length));
+}
+
 bool
 Torus::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
@@ -387,6 +417,14 @@ Torus::intersection(const Ray *ray,
 	}
 
 	return n_roots > 0;
+}
+
+void
+Torus::get_bounds(Bounds &b)
+{
+	const double r = m_outer_rad+m_inner_rad;
+	b.set_box(Point3D(-r,-r,-m_inner_rad),
+			Point3D(r,r,m_inner_rad));
 }
 
 

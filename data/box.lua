@@ -15,10 +15,10 @@ function make_box(size)
 	box = scene.node('box')
 
 	box_ceiling = scene.mesh('ceiling', {
-				{-size,  size, -size*4},
+				{-size,  size, -size},
 				{-size,  size,  size},
 				{ size,  size,  size},
-				{ size,  size, -size*4},
+				{ size,  size, -size},
 			}, {
 			}, {
 				{3,2,1,0}
@@ -27,10 +27,10 @@ function make_box(size)
 	box_ceiling:set_material(box_mat_white)
 
 	box_floor = scene.mesh('floor', {
-				{-size, -size, -size*4},
+				{-size, -size, -size},
 				{-size, -size,  size},
 				{ size, -size,  size},
-				{ size, -size, -size*4},
+				{ size, -size, -size},
 			}, {
 			}, {
 				{0,1,2,3}
@@ -39,10 +39,10 @@ function make_box(size)
 	box_floor:set_material(box_mat_white)
 
 	box_wleft = scene.mesh('left', {
-				{ size, -size*1.01, -size*4},
+				{ size, -size*1.01, -size},
 				{ size, -size*1.01,  size},
 				{ size,  size*1.01,  size},
-				{ size,  size*1.01, -size*4},
+				{ size,  size*1.01, -size},
 			}, {
 			}, {
 				{0,1,2,3}
@@ -51,10 +51,10 @@ function make_box(size)
 	box_wleft:set_material(box_mat_red)
 
 	box_wright = scene.mesh('left', {
-				{-size, -size*1.01, -size*4},
+				{-size, -size*1.01, -size},
 				{-size, -size*1.01,  size},
 				{-size,  size*1.01,  size},
-				{-size,  size*1.01, -size*4},
+				{-size,  size*1.01, -size},
 			}, {
 			}, {
 				{3,2,1,0}
@@ -73,19 +73,19 @@ function make_box(size)
 			})
 	box:add_child(box_wback)
 	box_wback:set_material(box_mat_white)
-
+--[[
 	box_wbehind = scene.mesh('behind', {
-				{-size, -size*1.01, -size*4},
-				{ size, -size*1.01, -size*4},
-				{ size,  size*1.01, -size*4},
-				{-size,  size*1.01, -size*4},
+				{-size, -size*1.01, -size},
+				{ size, -size*1.01, -size},
+				{ size,  size*1.01, -size},
+				{-size,  size*1.01, -size},
 			}, {
 			}, {
 				{0,1,2,3}
 			})
 	box:add_child(box_wbehind)
 	box_wbehind:set_material(box_mat_white)
-
+--]]
 	light = scene.light('light1')
 	box:add_child(light)
 	light:light_position({0,0.95*size,0.01*size})

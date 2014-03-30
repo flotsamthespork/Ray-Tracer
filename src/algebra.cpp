@@ -199,3 +199,25 @@ Matrix4x4 scaling(const Vector3D& scale)
 	s.getRow(2)[2] = scale[2];
 	return s;
 }
+
+void
+eval_min_max(const Point3D &p, Point3D &min, Point3D &max, bool *first)
+{
+	if (*first)
+	{
+		*first = false;
+		min = p;
+		max = p;
+	}
+	else
+	{
+		min[0] = std::min(min[0], p[0]);
+		min[1] = std::min(min[1], p[1]);
+		min[2] = std::min(min[2], p[2]);
+		max[0] = std::max(max[0], p[0]);
+		max[1] = std::max(max[1], p[1]);
+		max[2] = std::max(max[2], p[2]);
+	}
+}
+
+

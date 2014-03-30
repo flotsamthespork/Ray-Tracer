@@ -5,26 +5,6 @@
 
 #include "mesh.hpp"
 
-static void
-eval_min_max(const Point3D &p, Point3D &min, Point3D &max, bool *first)
-{
-	if (*first)
-	{
-		*first = false;
-		min = p;
-		max = p;
-	}
-	else
-	{
-		min[0] = std::min(min[0], p[0]);
-		min[1] = std::min(min[1], p[1]);
-		min[2] = std::min(min[2], p[2]);
-		max[0] = std::max(max[0], p[0]);
-		max[1] = std::max(max[1], p[1]);
-		max[2] = std::max(max[2], p[2]);
-	}
-}
-
 static Point3D
 find_mid(const Point3D &a, const Point3D &b)
 {
@@ -113,22 +93,31 @@ Polygon::intersection(const Ray *ray,
 	return false;
 }
 
+void
+Polygon::get_bounds(Bounds &b)
+{
+	bool first = true;
+	Point3D min, max;
+	for (int i = 0; i < m_verts.size(); ++i)
+		eval_min_max(m_verts[i], min, max, &first);
+	b.set_box(min, max);
+}
+
 
 Mesh::Mesh(const std::vector<Point3D>& verts,
 		const std::vector<Point2D> &uv,
 		const std::vector<Face>& faces) :
-	m_bounds(1)
+	m_bounds(1),
+	m_intersect(0)
 {
-	m_intersect = new BruteForceStrategy();
 	for (int i = 0; i < faces.size(); ++i)
 	{
 		Polygon *p = new Polygon(verts, uv, faces[i]);
 		PrimitiveObject *o = new PrimitiveObject(i, NULL, p, NULL);
 		m_polys.push_back(o);
-		m_intersect->add_object(o);
 	}
 
-	bool first = false;
+	bool first = true;
 	Point3D min, max;
 
 	for (int i = 0; i < verts.size(); ++i)
@@ -153,6 +142,24 @@ Mesh::~Mesh()
 	delete m_intersect;
 }
 
+void
+Mesh::finish(IntersectionStrategy *is)
+{
+	if (m_intersect)
+		delete m_intersect;
+	m_intersect = get_strategy(is->get_params());
+	for (int i = 0; i < m_polys.size(); ++i)
+		m_intersect->add_object(m_polys[i]);
+	m_intersect->finish();
+}
+
+void
+Mesh::get_bounds(Bounds &b)
+{
+	m_bounds.get_bounds(b);
+	b.transform(m_bounds_trans);
+}
+
 bool
 Mesh::intersection(const Ray *ray,
 		IntersectionHelper *intersections)
@@ -163,7 +170,10 @@ Mesh::intersection(const Ray *ray,
 		return false;
 
 	Intersection *i = intersections->get_intersection();
-	IntersectionCache *old_cache = i->swap_cache(intersections->get_cache(m_polys.size()));
+	IntersectionCache *my_cache = intersections->get_cache(m_polys.size());
+	if (my_cache)
+		my_cache->increment_cache_version();
+	IntersectionCache *old_cache = i->swap_cache(my_cache);
 
 	std::vector<IntersectionData> inters;
 	m_intersect->get_intersections(ray, inters, i);

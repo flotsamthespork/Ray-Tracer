@@ -106,6 +106,14 @@ PrimitiveObject::~PrimitiveObject()
 }
 
 void
+PrimitiveObject::get_bounds(Bounds &b)
+{
+	m_prim->get_bounds(b);
+	if (m_trans)
+		b.transform(*m_trans);
+}
+
+void
 PrimitiveObject::intersection(const Ray *ray,
 		IntersectionHelper *helper)
 {
@@ -137,6 +145,26 @@ CsgObject::~CsgObject()
 		delete m_left;
 	if (m_right)
 		delete m_right;
+}
+
+void
+CsgObject::get_bounds(Bounds &b)
+{
+	Bounds bl;
+	Bounds br;
+
+	// Get the bounds of either side!
+	if (m_left)
+		m_left->get_bounds(bl);
+	if (m_right)
+		m_right->get_bounds(br);
+
+	// Merge it!
+	b.merge(bl);
+	b.merge(br);
+
+	if (m_trans)
+		b.transform(*m_trans);
 }
 
 void
@@ -322,8 +350,10 @@ Scene::fill(IntersectionStrategy *is)
 	for (std::vector<SceneObject*>::iterator i = m_objects.begin();
 			i != m_objects.end(); ++i)
 	{
+		(*i)->finish(is);
 		is->add_object(*i);
 	}
+	is->finish();
 }
 
 int

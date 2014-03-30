@@ -7,11 +7,13 @@
 #include "material.hpp"
 #include "primitive.hpp"
 #include "scene_tree.hpp"
+#include "bounds.hpp"
 
 
 class Ray;
 class Intersection;
 class IntersectionCache;
+class IntersectionStrategy;
 class Scene;
 
 class CsgObject;
@@ -37,7 +39,14 @@ public:
 			Intersection *intersection,
 			std::vector<IntersectionData> &intersections);
 
+	virtual void get_bounds(Bounds &bounds) = 0;
+
 	virtual void complete_intersection(IntersectionData &d);
+
+	virtual void finish(IntersectionStrategy *is)
+	{
+		(void)is;
+	}
 
 	friend class CsgObject;
 };
@@ -69,6 +78,13 @@ public:
 	{
 		return m_material;
 	}
+
+	virtual void get_bounds(Bounds &bounds);
+
+	virtual void finish(IntersectionStrategy *is)
+	{
+		m_prim->finish(is);
+	}
 };
 
 class CsgObject : public SceneObject {
@@ -87,6 +103,8 @@ protected:
 			IntersectionHelper *helper);
 public:
 	virtual ~CsgObject();
+
+	virtual void get_bounds(Bounds &bounds);
 
 	friend class Scene;
 };

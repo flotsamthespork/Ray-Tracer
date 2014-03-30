@@ -18,6 +18,7 @@ public:
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
 
+	virtual void get_bounds(Bounds &b);
 private:
 	std::vector<Point3D>	m_verts;
 	std::vector<Point2D>	m_uvs;
@@ -37,6 +38,10 @@ public:
 
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
+
+	virtual void get_bounds(Bounds &b);
+
+	virtual void finish(IntersectionStrategy *is);
 
 private:
 	IntersectionStrategy	*m_intersect;

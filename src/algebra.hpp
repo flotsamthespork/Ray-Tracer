@@ -537,5 +537,6 @@ struct IntersectionData {
 };
 
 
+void eval_min_max(const Point3D &p, Point3D &min, Point3D &max, bool *first);
 
 #endif // CS488_ALGEBRA_HPP

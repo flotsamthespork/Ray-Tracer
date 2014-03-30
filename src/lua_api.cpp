@@ -766,6 +766,10 @@ int tracer_f_new_cmd(lua_State *L)
 			luaL_argcheck(L, false, 2, "Brute force strategy has no options");
 		params.type = BRUTE_FORCE;
 	}
+	else if (isstr[0] == 's')
+	{
+		params.type = SUBDIVISION;
+	}
 	else
 		luaL_argcheck(L, false, 2, "Invalid intersection strategy");
 

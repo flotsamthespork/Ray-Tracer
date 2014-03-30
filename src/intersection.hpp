@@ -11,7 +11,7 @@ struct JobData;
 
 enum StrategyType {
 	BRUTE_FORCE,
-	REGULAR_GRID
+	SUBDIVISION
 };
 
 
@@ -81,14 +81,21 @@ struct IntersectionStrategyParams {
 };
 
 class IntersectionStrategy {
+protected:
+	IntersectionStrategyParams m_params;
 private:
 	int m_object_count;
 public:
-	IntersectionStrategy();
+	IntersectionStrategy(const IntersectionStrategyParams &params);
 	virtual ~IntersectionStrategy();
 	virtual IntersectionCache *create_intersection_cache()
 	{
 		return 0;
+	}
+
+	const IntersectionStrategyParams& get_params() const
+	{
+		return m_params;
 	}
 
 	void get_intersection(const Ray *ray, Intersection *intersection);
@@ -106,6 +113,8 @@ public:
 
 	void add_object(SceneObject *object);
 
+	virtual void finish() = 0;
+
 	int get_object_count()
 	{
 		return m_object_count;
@@ -119,12 +128,26 @@ protected:
 class SpatialSubdivisionStrategy : public IntersectionStrategy {
 	// TODO - For "oct-tree" implementation we have one cache
 	//	- which is shared amongst all the regions
+
+private:
+	std::vector<SceneObject*> m_all_objects;
+	Bounds m_bounds;
+	int m_nx, m_ny, m_nz;
+	double m_xs, m_ys, m_zs;
+	IntersectionStrategy ****m_grid;
+
+	void setup_grid();
 public:
+	SpatialSubdivisionStrategy(const IntersectionStrategyParams &params);
+	virtual ~SpatialSubdivisionStrategy();
+
 	virtual IntersectionCache *create_intersection_cache();
 
 	virtual void get_intersections(const Ray *ray,
 			std::vector<IntersectionData> &intersections,
 			Intersection *i);
+
+	virtual void finish();
 
 protected:
 	virtual void do_add_object(SceneObject *object);
@@ -136,13 +159,16 @@ class BruteForceStrategy : public IntersectionStrategy {
 private:
 	std::vector<SceneObject*> m_objects;
 public:
+	BruteForceStrategy(const IntersectionStrategyParams &params);
 	virtual void get_intersections(const Ray *ray,
 			std::vector<IntersectionData> &intersections,
 			Intersection *i);
+
+	virtual void finish();
 protected:
 	virtual void do_add_object(SceneObject *object);
 };
 
-IntersectionStrategy *get_strategy(IntersectionStrategyParams &params);
+IntersectionStrategy *get_strategy(const IntersectionStrategyParams &params);
 
 #endif
