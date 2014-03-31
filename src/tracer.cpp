@@ -389,11 +389,12 @@ RayTracer::light(const Ray *light_ray,
 			}
 			else
 			{
-				// TODO - reverse normal.
 				normal = -normal;
 				n2 = 1;
 				obj = NULL;
 			}
+			// TODO - use the fresnel stuff to reflect for dielectric materials
+//	https://github.com/TomCrypto/Lambda/blob/master/src/materials/smoothglass.cpp
 
 			const double n = n1 / n2;
 			double st2 = 1.0 - n*n*(1.0-rdn*rdn);
