@@ -27,6 +27,6 @@ b:rotate('x', -30)
 b:rotate('z', 45)
 
 for i=0,4 do
-	do_render(box, 8, 'b', 'img'..i..'.png', 500, 500)
+	do_render(box, 8, 's', 'img'..i..'.png', 500, 500)
 	b:rotate('y', 90)
 end

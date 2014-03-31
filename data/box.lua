@@ -21,7 +21,7 @@ function make_box(size)
 				{ size,  size, -size},
 			}, {
 			}, {
-				{3,2,1,0}
+				{{3,2,1,0}}
 			})
 	box:add_child(box_ceiling)
 	box_ceiling:set_material(box_mat_white)
@@ -33,7 +33,7 @@ function make_box(size)
 				{ size, -size, -size},
 			}, {
 			}, {
-				{0,1,2,3}
+				{{0,1,2,3}}
 			})
 	box:add_child(box_floor)
 	box_floor:set_material(box_mat_white)
@@ -45,7 +45,7 @@ function make_box(size)
 				{ size,  size*1.01, -size},
 			}, {
 			}, {
-				{0,1,2,3}
+				{{0,1,2,3}}
 			})
 	box:add_child(box_wleft)
 	box_wleft:set_material(box_mat_red)
@@ -57,7 +57,7 @@ function make_box(size)
 				{-size,  size*1.01, -size},
 			}, {
 			}, {
-				{3,2,1,0}
+				{{3,2,1,0}}
 			})
 	box:add_child(box_wright)
 	box_wright:set_material(box_mat_green)
@@ -69,7 +69,7 @@ function make_box(size)
 				{-size,  size*1.01,  size},
 			}, {
 			}, {
-				{3,2,1,0}
+				{{3,2,1,0}}
 			})
 	box:add_child(box_wback)
 	box_wback:set_material(box_mat_white)
@@ -91,6 +91,7 @@ function make_box(size)
 	light:light_position({0,0.95*size,0.01*size})
 	light:light_color({1.0,1.0,1.0})
 	light:light_falloff({1,0,0})
+--	light:light_area({0.5,0,0}, {0,0,0.5})
 
 	cam = scene.camera('camera', 1)
 	box:add_child(cam)

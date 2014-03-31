@@ -7,6 +7,7 @@ box = make_box(2)
 c = color.constant({0.84, 0.6, 0.53})
 mat = material.new()
 mat:set_diffuse(c)
+mat:set_refraction(1.2, false)
 
 s = 0.35
 
@@ -22,6 +23,9 @@ box:add_child(i1)
 i2 = scene.node('i2')
 i2:add_child(cow)
 i2:translate({1,0,1})
-box:add_child(i2)
+--box:add_child(i2)
 
-do_render(box, 8, 's', 'cow.png', 1000, 1000)
+for i=0,200 do
+	do_render(box, 8, 's', 'cow'..i..'.png', 1000, 1000)
+	i1:rotate('y', 3)
+end
