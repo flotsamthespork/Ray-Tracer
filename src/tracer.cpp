@@ -7,7 +7,7 @@
 
 #include "tracer.hpp"
 
-#define AA 2
+#define AA 3
 #define AA_STEP (1.0/AA)
 
 RayTracer::RayTracer(Scene *scene,
@@ -19,7 +19,7 @@ RayTracer::RayTracer(Scene *scene,
 	m_camera(0)
 {
 	scene->fill(is);
-	set_light_samples(1); // TODO - change this to 1
+	set_light_samples(3); // TODO - change this to 1
 }
 
 RayTracer::~RayTracer()
@@ -99,11 +99,14 @@ RayTracer::trace_px(const int px,
 	// TODO - background color
 	Colour ray_color(0);
 
+	if (x == 45 && y == 50)
+		std::cout << "W" << std::endl;
+
 #if !(AA)
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
 	Vector3D ray_dir = ray_pos - m_camera->get_pos();
 
-	Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
+	Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
 
 	ray(&r, ray_color, data);
 #else
@@ -122,6 +125,59 @@ RayTracer::trace_px(const int px,
 	jt.set_ustep(AA_STEP);
 	jt.set_vstep(AA_STEP);
 
+	Colour c[9];
+
+	int i = 0;
+	{
+//		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+0)*AA_STEP, (0.5+0)*AA_STEP);
+		Point3D ray_pos = m_px_to_wcs * Point3D(x,y,0);
+		Vector3D ray_dir = ray_pos - m_camera->get_pos();
+		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
+		ray(&r, c[i++], data);
+	}
+	{
+//		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+2)*AA_STEP, (0.5+0)*AA_STEP);
+		Point3D ray_pos = m_px_to_wcs * Point3D(x+1,y,0);
+		Vector3D ray_dir = ray_pos - m_camera->get_pos();
+		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
+		ray(&r, c[i++], data);
+	}
+	{
+//		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+0)*AA_STEP, (0.5+2)*AA_STEP);
+		Point3D ray_pos = m_px_to_wcs * Point3D(x,y+1,0);
+		Vector3D ray_dir = ray_pos - m_camera->get_pos();
+		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
+		ray(&r, c[i++], data);
+	}
+	{
+//		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+2)*AA_STEP, (0.5+2)*AA_STEP);
+		Point3D ray_pos = m_px_to_wcs * Point3D(x+1,y+1,0);
+		Vector3D ray_dir = ray_pos - m_camera->get_pos();
+		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
+		ray(&r, c[i++], data);
+	}
+
+	bool sample_more = false;
+	for (int j = 0; j < i && !sample_more; ++j)
+	{
+		for (int k = j+1; k < i && !sample_more; ++k)
+		{
+			if (c[j].difference(c[k]) > 0.1)
+				sample_more = true;
+		}
+	}
+
+//	if (sample_more)
+//	{
+//		ray_color = Colour(0,0,1);
+//	}
+//	else
+//	{
+		for (int j = 0; j < i; ++j)
+			ray_color = ray_color + (1.0/i)*c[j];
+//	}
+
+	/*
 	for (int i = 0; i < AA; ++i)
 	{
 		for (int j = 0; j < AA; ++j)
@@ -321,7 +377,7 @@ RayTracer::light(const Ray *light_ray,
 
 		const double rdn = light_ray->get_dir().dot(normal);
 
-		if (refract)
+		if (refract && light_ray->get_bounce() < 10)
 		{
 			double n1, n2;
 			n1 = light_ray->get_refraction_index();
@@ -333,23 +389,39 @@ RayTracer::light(const Ray *light_ray,
 			}
 			else
 			{
+				// TODO - reverse normal.
+				normal = -normal;
 				n2 = 1;
 				obj = NULL;
 			}
 
 			const double n = n1 / n2;
-			const double c = sqrt(1 - n*n*(1 - rdn*rdn));
+			double st2 = 1.0 - n*n*(1.0-rdn*rdn);
+			if (st2 >= 0)
+			{
+				st2 = sqrt(st2);
+//				Vector3D ray_dir = (n*light_ray->get_dir()) +
+//					(-n*rdn + sqrt(1-st2)) * normal;
+				Vector3D ray_dir = n*light_ray->get_dir() +
+					(n*std::abs(rdn) - st2)*normal;
+				Ray r(point, ray_dir, power, n2, obj, light_ray->get_bounce()+1);
+				Colour r_color(0);
 
-//			std::cout << refract << std::endl;
-
-			Vector3D ray_dir = (n*light_ray->get_dir()) + (n*rdn - c) * normal;
-			Ray r(point, ray_dir, power, n2, obj);
-
-			Colour r_color(0);
-
-			if (ray(&r, r_color, data))
-//				diffuse_color = diffuse_color*r_color;
-				diffuse_color = r_color;
+				if (ray(&r, r_color, data))
+//					diffuse_color = diffuse_color*r_color;
+					diffuse_color = r_color;
+			}
+			else
+			{
+				Colour r_color(0);
+				Vector3D ray_dir = light_ray->get_dir() + 2*rdn*normal;
+				Ray r(point, ray_dir, power*reflect,
+					light_ray->get_refraction_index(),
+					light_ray->get_refraction_src(), light_ray->get_bounce()+1);
+				if (ray(&r, r_color, data))
+					diffuse_color = r_color;
+				// reflection?
+			}
 		}
 
 		if (reflect)
@@ -361,7 +433,7 @@ RayTracer::light(const Ray *light_ray,
 			Vector3D ray_dir = light_ray->get_dir() - 2*rdn*normal;
 			Ray r(point, ray_dir, power*reflect,
 					light_ray->get_refraction_index(),
-					light_ray->get_refraction_src());
+					light_ray->get_refraction_src(), light_ray->get_bounce());
 			if (ray(&r, r_color, data))
 				diffuse_color = diffuse_color + reflect*r_color;
 		}

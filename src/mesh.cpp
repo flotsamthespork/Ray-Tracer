@@ -40,19 +40,37 @@ triangle_intersection(const Ray *ray,
 
 Polygon::Polygon(const std::vector<Point3D> &verts,
 		const std::vector<Point2D> &uvs,
-		const Face &polygon)
+		const Face *vert_i,
+		const Face *uv_i)
 {
 
-	for (FaceItr i = polygon.begin();
-			i != polygon.end(); ++i)
+	for (int i = 0; i < vert_i->size(); ++i)
 	{
-		m_verts.push_back(verts[*i]);
-		if (uvs.size() > *i)
-			m_uvs.push_back(uvs[*i]);
+		m_verts.push_back(verts[(*vert_i)[i]]);
+		if (uv_i && i < uv_i->size())
+		{
+//			if (i == 1)
+//				std::cout << uvs[(*uv_i)[i]] << std::endl;
+			m_uvs.push_back(uvs[(*uv_i)[i]]);
+		}
 		else
 			m_uvs.push_back(Point2D(0,0));
 	}
-
+/*
+	for (FaceItr i = vert_i->begin();
+			i != vert_i->end(); ++i)
+	{
+		m_verts.push_back(verts[*i]);
+		if (uv_i && uv_i->size() > *i)
+		{
+			m_uvs.push_back(uvs[(*uv_i)[*i]]);
+			std::cout << (*uv_i)[*i] << std::endl;
+//			std::cout <<uvs[(*uv_i)[*i]] << std::endl;
+		}
+		else
+			m_uvs.push_back(Point2D(0,0));
+	}
+*/
 	m_normal = (m_verts[1] - m_verts[0]).cross(m_verts[2] - m_verts[0]);
 }
 
@@ -80,9 +98,6 @@ Polygon::intersection(const Ray *ray,
 			d.uv[0] = (1-beta-gamma)*uv0[0] + beta*uv1[0] + gamma*uv2[0];
 			d.uv[1] = (1-beta-gamma)*uv0[1] + beta*uv1[1] + gamma*uv2[1];
 
-			if (d.uv[0] < 0 || d.uv[0] > 1)
-				std::cout << d.uv[0] << std::endl;
-
 			d.t = (m_verts[0]-ray->get_pos()).dot(m_normal) /
 				(m_normal.dot(ray->get_dir()));
 
@@ -106,13 +121,18 @@ Polygon::get_bounds(Bounds &b)
 
 Mesh::Mesh(const std::vector<Point3D>& verts,
 		const std::vector<Point2D> &uv,
-		const std::vector<Face>& faces) :
+		const std::vector<Face>& face_vs,
+		const std::vector<Face>& face_vts) :
 	m_bounds(1),
 	m_intersect(0)
 {
-	for (int i = 0; i < faces.size(); ++i)
+	for (int i = 0; i < face_vs.size(); ++i)
 	{
-		Polygon *p = new Polygon(verts, uv, faces[i]);
+		const Face *face_vert = &face_vs[i];
+		const Face *face_tex = 0;
+		if (face_vts.size() >= i)
+			face_tex = &face_vts[i];
+		Polygon *p = new Polygon(verts, uv, face_vert, face_tex);
 		PrimitiveObject *o = new PrimitiveObject(i, NULL, p, NULL);
 		m_polys.push_back(o);
 	}

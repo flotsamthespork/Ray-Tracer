@@ -277,7 +277,8 @@ int scene_f_mesh_cmd(lua_State *L)
 
 	std::vector<Point3D> verts;
 	std::vector<Point2D> uvs;
-	std::vector<std::vector<int> > faces;
+	std::vector<std::vector<int> > face_v;
+	std::vector<std::vector<int> > face_uv;
 
 	luaL_checktype(L, 2, LUA_TTABLE);
 	int vert_count = luaL_getn(L, 2);
@@ -303,6 +304,7 @@ int scene_f_mesh_cmd(lua_State *L)
 
 		Point2D uv;
 		get_tuple(L, -1, &uv[0], 2);
+		uv[1] = 1-uv[1];
 		uvs.push_back(uv);
 		lua_pop(L, 1);
 	}
@@ -312,23 +314,39 @@ int scene_f_mesh_cmd(lua_State *L)
 
 	luaL_argcheck(L, face_count >= 1, 4, "Tuple of faces expected");
 
-	faces.resize(face_count);
+	face_v.resize(face_count);
+	face_uv.resize(face_count);
 
 	for (int i = 1; i <= face_count; ++i)
 	{
 		lua_rawgeti(L, 4, i);
 
 		luaL_checktype(L, -1, LUA_TTABLE);
-		int index_count = luaL_getn(L, -1);
+		int attrib_count = luaL_getn(L, -1);
 
+		luaL_argcheck(L, attrib_count >= 1, 4, "Vertices expected.");
+
+		// Get the vertices
+		lua_rawgeti(L, -1, 1);
+		int index_count = luaL_getn(L, -1);
 		luaL_argcheck(L, index_count >= 3, 4, "Tuple of indices expected");
-		faces[i-1].resize(index_count);
-		get_tuple(L, -1, &faces[i-1][0], index_count);
+		face_v[i-1].resize(index_count);
+		get_tuple(L, -1, &face_v[i-1][0], index_count);
+		lua_pop(L, 1);
+
+		if (attrib_count >= 2)
+		{
+			lua_rawgeti(L, -1, 2);
+			index_count = luaL_getn(L, -1);
+			face_uv[i-1].resize(index_count);
+			get_tuple(L, -1, &face_uv[i-1][0], index_count);
+			lua_pop(L, 1);
+		}
 
 		lua_pop(L, 1);
 	}
 
-	Mesh *mesh = new Mesh(verts, uvs, faces);
+	Mesh *mesh = new Mesh(verts, uvs, face_v, face_uv);
 	GRLUA_DEBUG(*mesh);
 	data->node = new GeometryNode(name, mesh);
 

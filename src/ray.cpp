@@ -16,13 +16,15 @@ Ray::Ray(const Point3D &ray_pos,
 		const double power,
 		const double refraction_index,
 		SceneObject *refraction_obj,
+		const int bounce,
 		bool is_normalized) :
 	m_pos(ray_pos),
 	m_dir(ray_dir),
 	m_normalized(is_normalized),
 	m_power(power),
 	m_refraction_index(refraction_index),
-	m_refraction_obj(refraction_obj)
+	m_refraction_obj(refraction_obj),
+	m_bounce(bounce)
 
 {
 	normalize();
@@ -65,6 +67,12 @@ SceneObject*
 Ray::get_refraction_src() const
 {
 	return m_refraction_obj;
+}
+
+int
+Ray::get_bounce() const
+{
+	return m_bounce;
 }
 
 void

@@ -13,6 +13,7 @@ private:
 	double		m_power;
 	double		m_refraction_index;
 	SceneObject*	m_refraction_obj;
+	int		m_bounce;
 
 public:
 	Ray();
@@ -21,6 +22,7 @@ public:
 			const double power,
 			const double refraction_index,
 			SceneObject *refraction_obj,
+			const int bounce,
 			bool is_normalized = false);
 
 	void normalize();
@@ -31,6 +33,7 @@ public:
 	double get_power() const;
 	double get_refraction_index() const;
 	SceneObject *get_refraction_src() const;
+	int get_bounce() const;
 
 	void transform(const Matrix4x4 *transform, Ray &ray) const;
 

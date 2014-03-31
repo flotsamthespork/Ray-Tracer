@@ -457,6 +457,11 @@ public:
     , g_(c)
     , b_(c)
   {}
+  Colour()
+    : r_(0)
+    , g_(0)
+    , b_(0)
+  {}
   Colour(const Colour& other)
     : r_(other.r_)
     , g_(other.g_)
@@ -482,6 +487,14 @@ public:
   double B() const 
   { 
     return b_;
+  }
+
+  double difference(const Colour& a)
+  {
+	Vector3D v(std::abs(r_-a.r_),
+			std::abs(g_-a.g_),
+			std::abs(b_-a.b_));
+	return v.length();
   }
 
 private:

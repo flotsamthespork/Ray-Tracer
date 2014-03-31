@@ -13,7 +13,8 @@ class Polygon : public Primitive {
 public:
 	Polygon(const std::vector<Point3D> &verts,
 		const std::vector<Point2D> &uvs,
-		const Face &polygon);
+		const Face *vert_i,
+		const Face *uv_i);
 
 	virtual bool intersection(const Ray *ray,
 			IntersectionHelper *intersections);
@@ -32,7 +33,8 @@ class Mesh : public Primitive {
 public:
 	Mesh(const std::vector<Point3D>& verts,
 			const std::vector<Point2D> &uv,
-			const std::vector<Face>& faces);
+			const std::vector<Face>& face_vs,
+			const std::vector<Face>& face_vts);
 
 	virtual ~Mesh();
 
