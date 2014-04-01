@@ -186,7 +186,7 @@ RayTracer::trace_px(const int px,
 	{
 		for (int k = j+1; k < i && !sample_more; ++k)
 		{
-			if (c[j].difference(c[k]) > 0.1)
+			if (c[j].difference(c[k]) > 0.2)
 				sample_more = true;
 		}
 	}

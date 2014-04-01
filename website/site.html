@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.6  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Patrick Dobson">
+	<META NAME="CREATED" CONTENT="20140401;17515300">
+	<META NAME="CHANGEDBY" CONTENT="Patrick Dobson">
+	<META NAME="CHANGED" CONTENT="20140401;18072400">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 2cm }
+		P { margin-bottom: 0.21cm }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-CA" DIR="LTR">
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=6 STYLE="font-size: 22pt"><B>Enhanced
+Ray Tracer</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=3><B>By Patrick Dobson</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>Objectives</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>1)
+New Primitives (Cylinders, Cones, Torus)</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Added three new primitive shapes.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "primitives1.png">
+		<img src="primitives1.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>2)
+Constructive Solid Geometry</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Added union, intersection, and difference CSG operators for creating new geometry.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "csg.png">
+		<img src="csg.png" width="400px" height="400px" />
+	</a>
+	<a href = "csg2.png">
+		<img src="csg2.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>3)
+Texture Mapping</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Added texture mapping for all primitives and meshes. The first image demonstrates this, and the second image demonstrates texture transforms which are very useful for tiling and offsetting textures.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "textures1.png">
+		<img src="textures1.png" width="400px" height="400px" />
+	</a>
+	<a href = "textures2.png">
+		<img src="textures2.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>4)
+Bump Mapping</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Added bump mapping for all primitives and meshes (using the same system as texture mapping). The first image shows the geometry without bump mapping. The second one is bump mapped.
+In addition to UV coordinates, I also had to find a vector perpendicular to the normal to be used for perturbing the normal. 
+The scale of the bump map is also customizable for perturbing the normals more or less.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "bump1.png">
+		<img src="bump1.png" width="400px" height="400px" />
+	</a>
+	<a href = "bump2.png">
+		<img src="bump2.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>5)
+Reflection</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Mirror reflection was done via recursive ray tracing to get the color of reflective materials. Recursion was terminated when the contribution of recursive rays became negligible.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "reflection1.png">
+		<img src="reflection1.png" width="400px" height="400px" />
+	</a>
+	<a href = "reflection2.png">
+		<img src="reflection2.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>6)
+Refraction</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Refracted rays were calculated using Snells law. Recursive rays terminated after a set number of bounces to avoid infinite recursion in the event of total internal refraction. I had hoped to get fresnel reflection working, but my attempts left the material looking washed out.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+The first image shows spheres refraction light. Clockwise from the top left, the indexes of refraction are 1.01, 1.33 (water), 1.52 (glass), 2.49 (diamond). The second image shows refraction through a bump mapped box.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "refraction1.png">
+		<img src="refraction1.png" width="400px" height="400px" />
+	</a>
+	<a href = "refraction2.png">
+		<img src="refraction2.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>7)
+Spatial Subdivision</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+To divide the space, first a bounding box for the whole scene is computed. Next an "optimal" number of divisions is calculated (this is actually just found by the square root of the number of objects multiplied by a constant). Then the region is split into subspaces that are very roughly equal sized. All scene objects are put into any regions their bounding boxes overlap. The following are some comparisons with the brute force method.
+</SPAN></FONT></P>
+<table border="1px">
+	<tr>
+	<td>Estimated Objects</td>
+	<td>Brute Force (with mesh BB)</td>
+	<td>Spatial Subdivision</td>
+	<td>Performance</td>
+	</tr>
+	<tr>
+	<td>20K</td>
+	<td>53.65s</td>
+	<td>0.43s</td>
+	<td>124.7x</td>
+	</tr>
+	<tr>
+	<td>5.5K</td>
+	<td>0.77s</td>
+	<td>0.03s</td>
+	<td>25.7x</td>
+	</tr>
+	<tr>
+	<td>8</td>
+	<td>0.021s</td>
+	<td>0.027s</td>
+	<td>0.78x</td>
+	</tr>
+</table>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>8)
+Soft Shadows</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Soft shadows were implemented using area lights and stochastic sampling of points on the light source. The following images respectively use 1x1, 2x2, 3x3, 4x4 and 5x5 sampling.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "shadows1_1.png">
+		<img src="shadows1_1.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows1_2.png">
+		<img src="shadows1_2.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows1_3.png">
+		<img src="shadows1_3.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows1_4.png">
+		<img src="shadows1_4.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows1_5.png">
+		<img src="shadows1_5.png" width="200px" height="200px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "shadows2_1.png">
+		<img src="shadows2_1.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows2_2.png">
+		<img src="shadows2_2.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows2_3.png">
+		<img src="shadows2_3.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows2_4.png">
+		<img src="shadows2_4.png" width="200px" height="200px" />
+	</a>
+	<a href = "shadows2_5.png">
+		<img src="shadows2_5.png" width="200px" height="200px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>9)
+Adaptive Anti-Aliasing</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+This was implemented by determining the colors of the corners of each pixel, finding the maximum difference in color intensities and taking 5 more samples if the difference is too large. This effectively gets the benefits of 3x3 supersampling with a minimum cost of 2x2 supersampling.
+Originally I used stochastic sampling to check the corners of the pixel, but the randomness interfered with the edge detection. The first 4 samples use a regular grid, but the remaining 5 use stochastic sampling.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+The following images show no AA, the edges detected and the final scene with adaptive AA.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "aa_off.png">
+		<img src="aa_off.png" width="400px" height="400px" />
+	</a>
+	<a href = "aa_edges.png">
+		<img src="aa_edges.png" width="400px" height="400px" />
+	</a>
+	<a href = "aa.png">
+		<img src="aa.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>10)
+Final Scene</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Scrabble!
+Finding the layout for the pieces did not take as long as you might think.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "final_scene.png">
+		<img src="final_scene.png" width="1000px" height="1000px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal"><BR>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>
+11) Mesh Vertex Normals</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Meshes can have vertex normals for smooth lighting. This also make refraction look nicer with models!
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm; font-weight: normal; text-align:center"><BR>
+	<a href = "normals1.png">
+		<img src="normals1.png" width="400px" height="400px" />
+	</a>
+	<a href = "normals2.png">
+		<img src="normals2.png" width="400px" height="400px" />
+	</a>
+	<a href = "refraction3.png">
+		<img src="refraction3.png" width="400px" height="400px" />
+	</a>
+</P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>
+11) Specular Maps</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+Using the same techniques as texture mapping and bump mapping, it was very simple to add specular maps to my ray tracer. Unfortunately I haven't created any demonstrations of this.
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4 STYLE="font-size: 16pt"><B>
+12) Oct-trees</B></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+As a last minute addition, I added oct-trees to my ray tracer by using nested spatial subdivisions. To split subdivisions I used a combination of the current depth, and the number of objects in the current node of the tree. I didn't have time to come up with a smart algorithm for determining when to stop, so just used constants for these values. I was unable to get better performance than a simple spatial subdivision, and building the oct-tree took too long, so I gave up. (I don't have time to run tests, but I know that I was able to get a render in 2.6s with oct-trees vs 1.5s with spatial subdivisions, after having tweaked the parameters of the oct-tree for best performance).
+</SPAN></FONT></P>
+<P STYLE="margin-bottom: 0cm"><FONT SIZE=4><SPAN STYLE="font-weight: normal">
+</BODY>
+</HTML>

@@ -325,10 +325,11 @@ board:set_material(board_mat)
 
 white_light = scene.light("white_light");
 root:add_child(white_light)
-white_light:light_position({0,3,3})
-white_light:light_color({0.9, 0.9, 0.9})
+white_light:light_position({10,4,13})
+--white_light:light_color({0.9, 0.9, 0.9})
+white_light:light_color({0.95, 0.8, 0.5})
 white_light:light_falloff({1, 0, 0})
-white_light:light_area({1,0,0}, {0,0,1})
+white_light:light_area({3,0,0}, {0,0,3})
 
 --[[
 white_light = scene.light("white_light");
@@ -352,14 +353,12 @@ cam1:cam_fov(50)
 cam1:cam_position({5.2, 3.3, -3.4}, false)
 cam1:cam_view({-1, -0.8, 0.5}, false)
 
---rt = tracer.new(root, 'b')
 rt = tracer.new(root, 's')
---rt = tracer.new(root, 'od5s10')
+rt:set_background(color.texture('scrabble/background.png'))
 rt:set_threads(8)
 rt:set_ambient({0.3, 0.3, 0.3})
-rt:set_shadow_samples(1)
-rt:set_background(color.texture('gun_render.png'))
+rt:set_shadow_samples(4)
 
 -- Camera ID, Output, width, height
-rt:render(1, "final_scene0.png", 1000, 1000)
+rt:render(1, "final_scene.png", 1500, 1500)
 
