@@ -22,10 +22,14 @@ node_board:rotate('y', -9)
 node_board:translate({0,0.01,-0.3})
 
 white = color.constant({1,1,1})
+black = color.constant({0,0,0})
 
 board_tex = color.texture('scrabble/board.png')
+board_bump = color.texture('scrabble/board_bump.png')
+board_bump:bump_magnitude(-100)
 board_mat = material.new()
 board_mat:set_diffuse(board_tex)
+board_mat:set_bump(board_bump)
 
 table_tex = color.texture('scrabble/table.png')
 table_mat = material.new()
@@ -40,15 +44,15 @@ mirror_mat:set_diffuse(color.constant({0,0,0}))
 mirror_mat:set_reflection(0.8)
 
 mirrorframe_mat = material.new()
-mirrorframe_mat:set_diffuse(color.constant({1,1,0}))
+mirrorframe_mat:set_diffuse(color.constant({0.4,0.4,0.4}))
 
 glass_mat = material.new()
-glass_mat:set_diffuse(white)
+glass_mat:set_diffuse(color.constant({0.5,0.5,0.5}))
 glass_mat:set_refraction(1.52, true)
 
 water_mat = material.new()
 water_mat:set_diffuse(color.constant({0.4,0.4,1.0}))
-water_mat:set_refraction(1.33, true)
+--water_mat:set_refraction(1.1, true)
 
 air_mat = material.new()
 air_mat:set_diffuse(white)
@@ -109,7 +113,6 @@ function make_cup(rad, height)
 	local scale = 0.35
 	cup = scene.mesh('cup', readobj('scrabble/cup.obj'))
 	cup:set_material(glass_mat)
---	cup:translate({0,2,0})
 	cup:scale({scale,scale,scale})
 
 	return cup
@@ -181,7 +184,7 @@ function make_piece(piece)
 			{pw*4, ph*1},
 			{pw*3, ph*1},
 			{pw*3, ph*0},
-		}, {
+		}, {}, {
 			{{0,1,2,3}, {0,1,2,3}},
 			{{7,6,5,4}, {4,5,6,7}},
 			{{0,3,7,4}, {4,5,6,7}},
@@ -200,9 +203,12 @@ for i=string.byte('a',1),string.byte('z',1) do
 end
 piece[' '] = make_piece(' ')
 
-function make_tile_rack(word)
+function make_tile_rack(word, scale)
 	local instance = scene.node('holder_'..word)
-	instance:add_child(tile_holder)
+	local holder = scene.node('')
+	holder:add_child(tile_holder)
+	holder:scale({1,1,scale})
+	instance:add_child(holder)
 
 	local len = word:len()
 	local w = PIECE_WIDTH*1.1*(len-1)*2
@@ -269,16 +275,19 @@ add_word('spat_al', 5, 7, true)
 add_word('s_bdivi_ion', 2, 9, true)
 add_word('_yli_der', 5, 11, true)
 
-reflection = make_tile_rack('noitcelfer')
+reflection = make_tile_rack('reflection',1)
 node_table:add_child(reflection)
 reflection:translate({-0.1*BOARD_SIZE,0,0.65*BOARD_SIZE})
 reflection:rotate('y', -140)
 
-refraction = make_tile_rack('refraction')
+refraction = make_tile_rack('refraction',1)
 node_table:add_child(refraction)
 refraction:translate({0.1*BOARD_SIZE,0,-0.65*BOARD_SIZE})
 refraction:rotate('y', 75)
 
+patrick = make_tile_rack('by__patrick__dobson',2)
+node_table:add_child(patrick)
+patrick:translate({-0.6*BOARD_SIZE, 0, -0.15*BOARD_SIZE})
 
 mirror = make_mirror(2,3)
 root:add_child(mirror)
@@ -287,7 +296,7 @@ mirror:translate({-0.8*BOARD_SIZE,0,0.25*BOARD_SIZE})
 
 cup = make_cup(0.5,2)
 root:add_child(cup)
-cup:translate({2.0*BOARD_SIZE,0,-1.75*BOARD_SIZE})
+cup:translate({1.9*BOARD_SIZE,0,-1.75*BOARD_SIZE})
 cup:rotate('x', -90)
 
 
@@ -308,7 +317,7 @@ board = scene.mesh("mesh", {
 			{1, 1},
 			{0, 1},
 			{0, 0}
-		}, {
+		}, {}, {
 			{{0,1,2,3}, {0,1,2,3}}
 		})
 node_board:add_child(board)
@@ -316,9 +325,10 @@ board:set_material(board_mat)
 
 white_light = scene.light("white_light");
 root:add_child(white_light)
-white_light:light_position({0,3,0})
+white_light:light_position({0,3,3})
 white_light:light_color({0.9, 0.9, 0.9})
 white_light:light_falloff({1, 0, 0})
+white_light:light_area({1,0,0}, {0,0,1})
 
 --[[
 white_light = scene.light("white_light");
@@ -342,10 +352,14 @@ cam1:cam_fov(50)
 cam1:cam_position({5.2, 3.3, -3.4}, false)
 cam1:cam_view({-1, -0.8, 0.5}, false)
 
+--rt = tracer.new(root, 'b')
 rt = tracer.new(root, 's')
+--rt = tracer.new(root, 'od5s10')
 rt:set_threads(8)
 rt:set_ambient({0.3, 0.3, 0.3})
+rt:set_shadow_samples(1)
+rt:set_background(color.texture('gun_render.png'))
 
 -- Camera ID, Output, width, height
-rt:render(1, "final_scene.png", 2500, 2500)
+rt:render(1, "final_scene0.png", 1000, 1000)
 
