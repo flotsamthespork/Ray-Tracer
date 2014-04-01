@@ -49,8 +49,6 @@ Polygon::Polygon(const std::vector<Point3D> &verts,
 		m_verts.push_back(verts[(*vert_i)[i]]);
 		if (uv_i && i < uv_i->size())
 		{
-//			if (i == 1)
-//				std::cout << uvs[(*uv_i)[i]] << std::endl;
 			m_uvs.push_back(uvs[(*uv_i)[i]]);
 		}
 		else

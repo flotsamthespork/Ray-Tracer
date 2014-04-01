@@ -372,12 +372,19 @@ SpatialSubdivisionStrategy::finish()
 		const double front =	(bounds[i].get_front() - m_bounds.get_front()) / m_zs;
 		const double back =	(bounds[i].get_back() - m_bounds.get_front()) / m_zs;
 
-		const int xi = std::max(0,	(int)floor(left*m_nx));
-		const int xf = std::min(std::max(xi+1,	(int)ceil(right*m_nx)),m_nx);
-		const int yi = std::max(0,	(int)floor(bottom*m_ny));
-		const int yf = std::min(std::max(yi+1,	(int)ceil(top*m_ny)), m_ny);
-		const int zi = std::max(0,	(int)floor(front*m_nz));
-		const int zf = std::min(std::max(zi+1,	(int)ceil(back*m_nz)), m_nz);
+		int xi = std::max(0,	(int)floor(left*m_nx));
+		int xf = std::min(std::max(xi+1,	(int)ceil(right*m_nx)),m_nx);
+		int yi = std::max(0,	(int)floor(bottom*m_ny));
+		int yf = std::min(std::max(yi+1,	(int)ceil(top*m_ny)), m_ny);
+		int zi = std::max(0,	(int)floor(front*m_nz));
+		int zf = std::min(std::max(zi+1,	(int)ceil(back*m_nz)), m_nz);
+
+		if (xf == xi) xf = std::min(m_nx, xf+1);
+		if (yf == yi) yf = std::min(m_ny, yf+1);
+		if (zf == zi) zf = std::min(m_nz, zf+1);
+		if (xf == xi) xi = std::max(0, xi-1);
+		if (yf == yi) yi = std::max(0, yi-1);
+		if (zf == zi) zi = std::max(0, zi-1);
 
 		for (int x = xi; x < xf; ++x)
 			for (int y = yi; y < yf; ++y)

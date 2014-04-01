@@ -99,9 +99,6 @@ RayTracer::trace_px(const int px,
 	// TODO - background color
 	Colour ray_color(0);
 
-	if (x == 45 && y == 50)
-		std::cout << "W" << std::endl;
-
 #if !(AA)
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
 	Vector3D ray_dir = ray_pos - m_camera->get_pos();
@@ -377,7 +374,7 @@ RayTracer::light(const Ray *light_ray,
 
 		const double rdn = light_ray->get_dir().dot(normal);
 
-		if (refract && light_ray->get_bounce() < 10)
+		if (refract && light_ray->get_bounce() < 50)
 		{
 			double n1, n2;
 			n1 = light_ray->get_refraction_index();
