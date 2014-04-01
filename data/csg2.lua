@@ -1,7 +1,7 @@
 
 require('box')
 
-box = make_box(2)
+box = make_box(2, false)
 
 white = color.constant({1,1,1})
 

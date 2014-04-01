@@ -2,7 +2,7 @@
 require('box')
 require('readobj')
 
-box = make_box(2)
+box = make_box(2, false)
 
 c = color.constant({0.84, 0.6, 0.53})
 mat = material.new()
@@ -26,6 +26,6 @@ i2:translate({1,0,1})
 --box:add_child(i2)
 
 for i=0,200 do
-	do_render(box, 8, 's', 'cow'..i..'.png', 1000, 1000)
+	do_render(box, 8, 's', 'cow'..i..'.png', 1000, 1000, 1)
 	i1:rotate('y', 3)
 end

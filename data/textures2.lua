@@ -1,7 +1,7 @@
 
 require('box')
 
-box = make_box(2)
+box = make_box(2, false)
 
 tex1 = color.texture('textures/box.png')
 tex2 = color.texture('textures/box.png')
@@ -54,4 +54,4 @@ b4:rotate('y', 10)
 b4:rotate('x', -20)
 b4:translate({-0.4,-0.4,-0.4})
 
-do_render(box, 8, 's', 'textures2.png', 1000, 1000)
+do_render(box, 8, 's', 'textures2.png', 1000, 1000, 1)

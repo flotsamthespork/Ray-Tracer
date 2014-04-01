@@ -2,7 +2,7 @@
 require('box')
 require('readobj')
 
-box = make_box(2)
+box = make_box(2, false)
 
 tex1 = color.texture('textures/cow.png')
 bump1 = color.texture('bump/bump2.png')
@@ -46,4 +46,4 @@ cow:translate({0,-2,0.5})
 cow:rotate('y', 220)
 cow:scale({1.3,1.3,1.3})
 
-do_render(box, 8, 's', 'bump3.png', 500, 500)
+do_render(box, 8, 's', 'bump3.png', 500, 500, 1)

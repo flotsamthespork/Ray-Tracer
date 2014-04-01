@@ -64,4 +64,4 @@ rt = tracer.new(box, 's')
 rt:set_threads(8)
 rt:set_ambient({0.3, 0.3, 0.3})
 
-rt:render(1, 'csg.png', 1000, 1000)
+rt:render(1, 'csg.png', 1000, 1000, 1)

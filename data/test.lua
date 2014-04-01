@@ -1,7 +1,7 @@
 
 require('box')
 
-box = make_box(2)
+box = make_box(2, false)
 
 red = color.constant({1.0, 0.2, 0.15})
 blue = color.constant({0.1, 0.09, 0.9})
@@ -9,9 +9,11 @@ white = color.constant({1.0,1.0,1.0})
 
 mat1 = material.new()
 mat1:set_diffuse(red)
+mat1:set_reflection(0.8)
 
 mat2 = material.new()
 mat2:set_diffuse(blue)
+mat2:set_reflection(0.8)
 
 s1 = scene.sphere('s1', 0.3)
 s1:set_material(mat1)

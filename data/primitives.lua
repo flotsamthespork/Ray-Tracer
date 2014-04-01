@@ -1,7 +1,7 @@
 
 require('box')
 
-box = make_box(2)
+box = make_box(2, false)
 
 tex1 = color.constant({1.0, 0.4, 0.1})
 tex2 = color.constant({0.4, 1.0, 0.1})
@@ -38,4 +38,4 @@ cylinder:translate({-1.1,0,-0.3})
 cylinder:rotate('x', 30)
 cylinder:rotate('y', 60)
 
-do_render(box, 8, 's', 'primitives.png', 500, 500)
+do_render(box, 8, 's', 'primitives.png', 500, 500, 1)

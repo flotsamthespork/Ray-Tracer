@@ -2,7 +2,7 @@
 require('box')
 require('readobj')
 
-box = make_box(2)
+box = make_box(2, false)
 
 tex1 = color.texture('textures/donut.png')
 tex1:translate(0, 0.5)
@@ -74,4 +74,4 @@ cow:translate({0,-2,-1.5})
 cow:rotate('y', 220)
 cow:scale({0.8,0.8,0.8})
 
-do_render(box, 8, 's', 'textures.png', 1000, 1000)
+do_render(box, 8, 's', 'textures.png', 1000, 1000, 1)

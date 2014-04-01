@@ -2,11 +2,11 @@
 require('box')
 require('readobj')
 
-box = make_box(2)
+box = make_box(2, false)
 
 tex = color.texture('../data/ak47.png')
 mat = material.new()
-mat:set_diffuse(tex)
+--mat:set_diffuse(tex)
 mat:set_refraction(2.5, false)
 
 s = 0.0003
@@ -19,4 +19,4 @@ gun:scale({s,s,s})
 box:add_child(gun)
 
 
-do_render(box, 8, 's', 'gun_render.png', 1000, 1000)
+do_render(box, 8, 's', 'gun_render.png', 1500, 1500)

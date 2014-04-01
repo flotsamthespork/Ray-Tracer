@@ -1,6 +1,6 @@
 
 
-function make_box(size)
+function make_box(size, area_light)
 	box_cm_white = color.constant({0.76, 0.75, 0.50})
 	box_cm_red   = color.constant({0.63, 0.06, 0.04})
 	box_cm_green = color.constant({0.15, 0.48, 0.09})
@@ -91,7 +91,9 @@ function make_box(size)
 	light:light_position({0,0.95*size,0.01*size})
 	light:light_color({1.0,1.0,1.0})
 	light:light_falloff({1,0,0})
---	light:light_area({0.5,0,0}, {0,0,0.5})
+	if area_light then
+		light:light_area({0.5,0,0}, {0,0,0.5})
+	end
 
 	cam = scene.camera('camera', 1)
 	box:add_child(cam)
@@ -105,10 +107,11 @@ end
 
 
 function do_render(box, num_threads, intersection_strat,
-		img_name, width, height)
+		img_name, width, height, samples)
 	rt = tracer.new(box, intersection_strat)
 	rt:set_threads(num_threads)
 	rt:set_ambient({0.3, 0.3, 0.3})
+	rt:set_shadow_samples(samples)
 
 	rt:render(1, img_name, width, height)
 end
