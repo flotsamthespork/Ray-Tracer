@@ -20,7 +20,7 @@ function make_box(size)
 				{ size,  size,  size},
 				{ size,  size, -size},
 			}, {
-			}, {
+			}, {}, {
 				{{3,2,1,0}}
 			})
 	box:add_child(box_ceiling)
@@ -32,7 +32,7 @@ function make_box(size)
 				{ size, -size,  size},
 				{ size, -size, -size},
 			}, {
-			}, {
+			}, {}, {
 				{{0,1,2,3}}
 			})
 	box:add_child(box_floor)
@@ -44,7 +44,7 @@ function make_box(size)
 				{ size,  size*1.01,  size},
 				{ size,  size*1.01, -size},
 			}, {
-			}, {
+			}, {}, {
 				{{0,1,2,3}}
 			})
 	box:add_child(box_wleft)
@@ -56,7 +56,7 @@ function make_box(size)
 				{-size,  size*1.01,  size},
 				{-size,  size*1.01, -size},
 			}, {
-			}, {
+			}, {}, {
 				{{3,2,1,0}}
 			})
 	box:add_child(box_wright)
@@ -68,7 +68,7 @@ function make_box(size)
 				{ size,  size*1.01,  size},
 				{-size,  size*1.01,  size},
 			}, {
-			}, {
+			}, {}, {
 				{{3,2,1,0}}
 			})
 	box:add_child(box_wback)
