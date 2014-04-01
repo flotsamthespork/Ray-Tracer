@@ -277,8 +277,10 @@ int scene_f_mesh_cmd(lua_State *L)
 
 	std::vector<Point3D> verts;
 	std::vector<Point2D> uvs;
+	std::vector<Vector3D> normals;
 	std::vector<std::vector<int> > face_v;
 	std::vector<std::vector<int> > face_uv;
+	std::vector<std::vector<int> > face_norms;
 
 	luaL_checktype(L, 2, LUA_TTABLE);
 	int vert_count = luaL_getn(L, 2);
@@ -310,26 +312,41 @@ int scene_f_mesh_cmd(lua_State *L)
 	}
 
 	luaL_checktype(L, 4, LUA_TTABLE);
-	int face_count = luaL_getn(L, 4);
+	int norm_count = luaL_getn(L, 4);
 
-	luaL_argcheck(L, face_count >= 1, 4, "Tuple of faces expected");
+	for (int i = 1; i <= norm_count; ++i)
+	{
+		lua_rawgeti(L, 4, i);
+
+		Vector3D norm;
+		get_tuple(L, -1, &norm[0], 3);
+		norm.normalize();
+		normals.push_back(norm);
+		lua_pop(L, 1);
+	}
+
+	luaL_checktype(L, 5, LUA_TTABLE);
+	int face_count = luaL_getn(L, 5);
+
+	luaL_argcheck(L, face_count >= 1, 5, "Tuple of faces expected");
 
 	face_v.resize(face_count);
 	face_uv.resize(face_count);
+	face_norms.resize(face_count);
 
 	for (int i = 1; i <= face_count; ++i)
 	{
-		lua_rawgeti(L, 4, i);
+		lua_rawgeti(L, 5, i);
 
 		luaL_checktype(L, -1, LUA_TTABLE);
 		int attrib_count = luaL_getn(L, -1);
 
-		luaL_argcheck(L, attrib_count >= 1, 4, "Vertices expected.");
+		luaL_argcheck(L, attrib_count >= 1, 5, "Vertices expected.");
 
 		// Get the vertices
 		lua_rawgeti(L, -1, 1);
 		int index_count = luaL_getn(L, -1);
-		luaL_argcheck(L, index_count >= 3, 4, "Tuple of indices expected");
+		luaL_argcheck(L, index_count >= 3, 5, "Tuple of indices expected");
 		face_v[i-1].resize(index_count);
 		get_tuple(L, -1, &face_v[i-1][0], index_count);
 		lua_pop(L, 1);
@@ -343,10 +360,20 @@ int scene_f_mesh_cmd(lua_State *L)
 			lua_pop(L, 1);
 		}
 
+		if (attrib_count >= 3)
+		{
+			lua_rawgeti(L, -1, 3);
+			index_count = luaL_getn(L, -1);
+			face_norms[i-1].resize(index_count);
+			get_tuple(L, -1, &face_norms[i-1][0], index_count);
+			lua_pop(L, 1);
+		}
+
 		lua_pop(L, 1);
 	}
 
-	Mesh *mesh = new Mesh(verts, uvs, face_v, face_uv);
+	Mesh *mesh = new Mesh(verts, uvs, normals,
+			face_v, face_uv, face_norms);
 	GRLUA_DEBUG(*mesh);
 	data->node = new GeometryNode(name, mesh);
 

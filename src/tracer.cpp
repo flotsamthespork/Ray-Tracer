@@ -164,47 +164,25 @@ RayTracer::trace_px(const int px,
 		}
 	}
 
-//	if (sample_more)
-//	{
-//		ray_color = Colour(0,0,1);
-//	}
-//	else
-//	{
-		for (int j = 0; j < i; ++j)
-			ray_color = ray_color + (1.0/i)*c[j];
-//	}
-
-	/*
-	for (int i = 0; i < AA; ++i)
+	if (sample_more)
 	{
-		for (int j = 0; j < AA; ++j)
+		for (int j = 0; j < 3; ++j)
 		{
-			Colour c(0);
-			Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+i)*AA_STEP, (0.5+j)*AA_STEP);
+			Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+j)*AA_STEP, (0.5+1)*AA_STEP);
 			Vector3D ray_dir = ray_pos - m_camera->get_pos();
-
-			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
-			ray(&r, c, data);
-
-			ray_color = ray_color + 1.0/(AA*AA)*c;
+			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
+			ray(&r, c[i++], data);
+		}
+		for (int j = 0; j < 3; j += 2)
+		{
+			Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+1)*AA_STEP, (0.5+j)*AA_STEP);
+			Vector3D ray_dir = ray_pos - m_camera->get_pos();
+			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
+			ray(&r, c[i++], data);
 		}
 	}
-
-	/*
-	for (int i = 0; i < SAMPLES; ++i)
-	{
-		for (int j = 0; j < SAMPLES; ++j)
-		{
-			Colour c(0);
-			Point3D ray_pos = m_px_to_wcs * Point3D(x+(0.5+i)*d, y+(0.5+j)*d, 0);
-			Vector3D ray_dir = ray_pos - m_camera->get_pos();
-
-			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL);
-			ray(&r, c, data);
-
-			ray_color = ray_color + 1.0/(SAMPLES*SAMPLES)*c;
-		}
-	*/
+	for (int j = 0; j < i; ++j)
+		ray_color = ray_color + (1.0/i)*c[j];
 
 #endif
 	(*m_img)(x,y,0) = ray_color.R();
@@ -374,7 +352,7 @@ RayTracer::light(const Ray *light_ray,
 
 		const double rdn = light_ray->get_dir().dot(normal);
 
-		if (refract && light_ray->get_bounce() < 50)
+		if (refract && light_ray->get_bounce() < 500)
 		{
 			double n1, n2;
 			n1 = light_ray->get_refraction_index();
@@ -406,14 +384,16 @@ RayTracer::light(const Ray *light_ray,
 				Colour r_color(0);
 
 				if (ray(&r, r_color, data))
+				{
 //					diffuse_color = diffuse_color*r_color;
 					diffuse_color = r_color;
+				}
 			}
 			else
 			{
 				Colour r_color(0);
 				Vector3D ray_dir = light_ray->get_dir() + 2*rdn*normal;
-				Ray r(point, ray_dir, power*reflect,
+				Ray r(point, ray_dir, power,
 					light_ray->get_refraction_index(),
 					light_ray->get_refraction_src(), light_ray->get_bounce()+1);
 				if (ray(&r, r_color, data))

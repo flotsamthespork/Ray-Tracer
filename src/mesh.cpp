@@ -40,35 +40,23 @@ triangle_intersection(const Ray *ray,
 
 Polygon::Polygon(const std::vector<Point3D> &verts,
 		const std::vector<Point2D> &uvs,
+		const std::vector<Vector3D> &norms,
 		const Face *vert_i,
-		const Face *uv_i)
+		const Face *uv_i,
+		const Face *norm_i)
 {
 
 	for (int i = 0; i < vert_i->size(); ++i)
 	{
 		m_verts.push_back(verts[(*vert_i)[i]]);
 		if (uv_i && i < uv_i->size())
-		{
 			m_uvs.push_back(uvs[(*uv_i)[i]]);
-		}
 		else
 			m_uvs.push_back(Point2D(0,0));
+		if (norm_i && i < norm_i->size())
+			m_normals.push_back(norms[(*norm_i)[i]]);
+
 	}
-/*
-	for (FaceItr i = vert_i->begin();
-			i != vert_i->end(); ++i)
-	{
-		m_verts.push_back(verts[*i]);
-		if (uv_i && uv_i->size() > *i)
-		{
-			m_uvs.push_back(uvs[(*uv_i)[*i]]);
-			std::cout << (*uv_i)[*i] << std::endl;
-//			std::cout <<uvs[(*uv_i)[*i]] << std::endl;
-		}
-		else
-			m_uvs.push_back(Point2D(0,0));
-	}
-*/
 	m_normal = (m_verts[1] - m_verts[0]).cross(m_verts[2] - m_verts[0]);
 }
 
@@ -87,7 +75,6 @@ Polygon::intersection(const Ray *ray,
 				return true;
 
 			IntersectionData d;
-			d.normal = m_normal;
 			d.u_tangent = m_verts[i+1] - m_verts[0];
 
 			Point2D uv0 = m_uvs[0];
@@ -95,6 +82,21 @@ Polygon::intersection(const Ray *ray,
 			Point2D uv2 = m_uvs[i+1];
 			d.uv[0] = (1-beta-gamma)*uv0[0] + beta*uv1[0] + gamma*uv2[0];
 			d.uv[1] = (1-beta-gamma)*uv0[1] + beta*uv1[1] + gamma*uv2[1];
+
+			Vector3D norm0, norm1, norm2;
+			if (m_normals.size() > 0)
+				norm0 = m_normals[0];
+			else
+				norm0 = m_normal;
+			if (m_normals.size() > i)
+				norm1 = m_normals[i];
+			else
+				norm1 = m_normal;
+			if (m_normals.size() > i+1)
+				norm2 = m_normals[i+1];
+			else
+				norm2 = m_normal;
+			d.normal = (1-beta-gamma)*norm0 + beta*norm1 + gamma*norm2;
 
 			d.t = (m_verts[0]-ray->get_pos()).dot(m_normal) /
 				(m_normal.dot(ray->get_dir()));
@@ -119,8 +121,10 @@ Polygon::get_bounds(Bounds &b)
 
 Mesh::Mesh(const std::vector<Point3D>& verts,
 		const std::vector<Point2D> &uv,
+		const std::vector<Vector3D> &norms,
 		const std::vector<Face>& face_vs,
-		const std::vector<Face>& face_vts) :
+		const std::vector<Face>& face_vts,
+		const std::vector<Face>& face_norms) :
 	m_bounds(1),
 	m_intersect(0)
 {
@@ -128,9 +132,13 @@ Mesh::Mesh(const std::vector<Point3D>& verts,
 	{
 		const Face *face_vert = &face_vs[i];
 		const Face *face_tex = 0;
+		const Face *face_norm = 0;
 		if (face_vts.size() >= i)
 			face_tex = &face_vts[i];
-		Polygon *p = new Polygon(verts, uv, face_vert, face_tex);
+		if (face_norms.size() >= i)
+			face_norm = &face_norms[i];
+		Polygon *p = new Polygon(verts, uv, norms,
+				face_vert, face_tex, face_norm);
 		PrimitiveObject *o = new PrimitiveObject(i, NULL, p, NULL);
 		m_polys.push_back(o);
 	}
