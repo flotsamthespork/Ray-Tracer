@@ -80,7 +80,8 @@ JobFactory::JobFactory(RayTracer *rt,
 		const int num_px,
 		const int num_jobs) :
 	m_last_px(num_px),
-	m_next_px(0)
+	m_next_px(0),
+	m_last_progress(0)
 {
 	assert(num_jobs > 0);
 	pthread_mutex_init(&m_px_lock, NULL);
@@ -125,6 +126,16 @@ JobFactory::get_px(int &px_a, int &px_b)
 	{
 		count = std::min(m_last_px-px_a, 25);
 		px_b = px_a+count;
+
+		double diff = m_next_px-m_last_progress;
+		diff /= m_last_px;
+		if (diff >= 0.05)
+		{
+			m_last_progress = m_next_px;
+			std::cout << 100*((double)m_last_progress/m_last_px) <<
+				"\% Complete" << std::endl;
+		}
+
 		m_next_px += count;
 	}
 	else

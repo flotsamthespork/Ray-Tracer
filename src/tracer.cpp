@@ -16,16 +16,23 @@ RayTracer::RayTracer(Scene *scene,
 	m_intersect(is),
 	m_ambient(0.1),
 	m_num_threads(1),
-	m_camera(0)
+	m_camera(0),
+	m_background(0),
+	m_first_run(true)
 {
-	scene->fill(is);
-	set_light_samples(3); // TODO - change this to 1
+	set_light_samples(1);
 }
 
 RayTracer::~RayTracer()
 {
 	delete m_scene;
 	delete m_intersect;
+}
+
+void
+RayTracer::set_background(ColorMap *map)
+{
+	m_background = map;
 }
 
 void
@@ -68,6 +75,14 @@ RayTracer::render(const int cam_id, const std::string img_name,
 	struct timeval t1, t2;
 	gettimeofday(&t1, 0);
 
+	std::cout << "Starting" << std::endl;
+
+	if (m_first_run)
+	{
+		m_scene->fill(m_intersect);
+		m_first_run = false;
+	}
+
 	Image img(width, height, 3);
 	JobFactory factory(this,
 			width*height,
@@ -98,6 +113,14 @@ RayTracer::trace_px(const int px,
 
 	// TODO - background color
 	Colour ray_color(0);
+	Colour bg_color(0);
+	if (m_background)
+	{
+		double uv[2];
+		uv[0] = (double)x/m_img_width;
+		uv[1] = (double)y/m_img_height;
+		bg_color = m_background->get_color(uv);
+	}
 
 #if !(AA)
 	Point3D ray_pos = m_px_to_wcs * Point3D(x+0.5, y+0.5, 0);
@@ -130,28 +153,32 @@ RayTracer::trace_px(const int px,
 		Point3D ray_pos = m_px_to_wcs * Point3D(x,y,0);
 		Vector3D ray_dir = ray_pos - m_camera->get_pos();
 		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
-		ray(&r, c[i++], data);
+		if (!ray(&r, c[i++], data))
+			c[i-1] = bg_color;
 	}
 	{
 //		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+2)*AA_STEP, (0.5+0)*AA_STEP);
 		Point3D ray_pos = m_px_to_wcs * Point3D(x+1,y,0);
 		Vector3D ray_dir = ray_pos - m_camera->get_pos();
 		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
-		ray(&r, c[i++], data);
+		if (!ray(&r, c[i++], data))
+			c[i-1] = bg_color;
 	}
 	{
 //		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+0)*AA_STEP, (0.5+2)*AA_STEP);
 		Point3D ray_pos = m_px_to_wcs * Point3D(x,y+1,0);
 		Vector3D ray_dir = ray_pos - m_camera->get_pos();
 		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
-		ray(&r, c[i++], data);
+		if (!ray(&r, c[i++], data))
+			c[i-1] = bg_color;
 	}
 	{
 //		Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+2)*AA_STEP, (0.5+2)*AA_STEP);
 		Point3D ray_pos = m_px_to_wcs * Point3D(x+1,y+1,0);
 		Vector3D ray_dir = ray_pos - m_camera->get_pos();
 		Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
-		ray(&r, c[i++], data);
+		if (!ray(&r, c[i++], data))
+			c[i-1] = bg_color;
 	}
 
 	bool sample_more = false;
@@ -171,16 +198,19 @@ RayTracer::trace_px(const int px,
 			Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+j)*AA_STEP, (0.5+1)*AA_STEP);
 			Vector3D ray_dir = ray_pos - m_camera->get_pos();
 			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
-			ray(&r, c[i++], data);
+			if (!ray(&r, c[i++], data))
+				c[i-1] = bg_color;
 		}
 		for (int j = 0; j < 3; j += 2)
 		{
 			Point3D ray_pos = m_px_to_wcs * jt.jitter((0.5+1)*AA_STEP, (0.5+j)*AA_STEP);
 			Vector3D ray_dir = ray_pos - m_camera->get_pos();
 			Ray r(m_camera->get_pos(), ray_dir, 1, 1, NULL, 0);
-			ray(&r, c[i++], data);
+			if (!ray(&r, c[i++], data))
+				c[i-1] = bg_color;
 		}
 	}
+
 	for (int j = 0; j < i; ++j)
 		ray_color = ray_color + (1.0/i)*c[j];
 

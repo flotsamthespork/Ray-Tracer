@@ -173,7 +173,7 @@ Mesh::finish(IntersectionStrategy *is)
 {
 	if (m_intersect)
 		delete m_intersect;
-	m_intersect = get_strategy(is->get_params());
+	m_intersect = get_strategy(is->get_params(), m_polys.size());
 	for (int i = 0; i < m_polys.size(); ++i)
 		m_intersect->add_object(m_polys[i]);
 	m_intersect->finish();

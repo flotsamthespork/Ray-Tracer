@@ -15,7 +15,8 @@ TextureColorMap::TextureColorMap(std::string &name) :
 	m_wrap(REPEAT),
 	m_img(ImageCache::acquire_image(name)),
 	m_width(0),
-	m_height(0)
+	m_height(0),
+	m_bump_mag(2)
 {
 	if (m_img)
 	{
@@ -75,8 +76,8 @@ TextureColorMap::bump(Vector3D &normal,
 		Colour t = get_color(x,y-1,true);
 		Colour b = get_color(x,y+1,true);
 
-		double gx = 2 * (l.R() - r.R());
-		double gy = 2 * (t.R() - b.R());
+		double gx = m_bump_mag * (l.R() - r.R());
+		double gy = m_bump_mag * (t.R() - b.R());
 
 		Vector3D v_tangent = normal.cross(u_tangent);
 

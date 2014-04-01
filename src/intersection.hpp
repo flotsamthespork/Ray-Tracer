@@ -11,7 +11,8 @@ struct JobData;
 
 enum StrategyType {
 	BRUTE_FORCE,
-	SUBDIVISION
+	SUBDIVISION,
+	OCTTREE
 };
 
 
@@ -77,7 +78,15 @@ public:
 };
 
 struct IntersectionStrategyParams {
+	IntersectionStrategyParams()
+	{
+		root = true;
+	}
 	StrategyType type;
+	bool root;
+	int max_depth;
+	int ideal_size;
+	Bounds bounds;
 };
 
 class IntersectionStrategy {
@@ -169,6 +178,7 @@ protected:
 	virtual void do_add_object(SceneObject *object);
 };
 
-IntersectionStrategy *get_strategy(const IntersectionStrategyParams &params);
+IntersectionStrategy *get_strategy(const IntersectionStrategyParams &params,
+		int object_count);
 
 #endif

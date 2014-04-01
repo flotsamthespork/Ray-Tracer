@@ -6,6 +6,7 @@
 #include "intersection.hpp"
 #include "scene.hpp"
 #include "jitter.hpp"
+#include "colormap.hpp"
 
 struct JobData;
 
@@ -14,8 +15,10 @@ private:
 	Scene *m_scene;
 	IntersectionStrategy *m_intersect;
 
+	ColorMap *m_background;
 	Colour m_ambient;
 	int m_num_threads;
+	bool m_first_run;
 
 	Camera *m_camera;
 	Image *m_img;
@@ -34,6 +37,7 @@ public:
 
 	IntersectionStrategy *get_intersection_strategy() const;
 
+	void set_background(ColorMap *map);
 	void set_ambient(Colour &color);
 	void set_num_threads(const int num_threads);
 	void set_light_samples(const int samples);

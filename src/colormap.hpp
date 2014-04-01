@@ -28,6 +28,10 @@ public:
 		return false;
 	}
 
+	virtual void set_bump_magnitude(double mag)
+	{
+	}
+
 	virtual ColorMapType get_type() = 0;
 };
 
@@ -66,6 +70,7 @@ private:
 	Matrix4x4 m_transform;
 	Image *m_img;
 	int m_width, m_height;
+	double m_bump_mag;
 
 	Colour get_color(const int x,
 			const int y,
@@ -81,6 +86,11 @@ public:
 	void rotate(double angle);
 
 	virtual Colour get_color(double *uv);
+
+	virtual void set_bump_magnitude(double mag)
+	{
+		m_bump_mag = mag;
+	}
 
 	virtual ColorMapType get_type()
 	{

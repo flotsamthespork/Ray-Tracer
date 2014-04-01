@@ -40,6 +40,7 @@
 #include <cctype>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 #include <unistd.h>
 #include "lua488.hpp"
@@ -834,15 +835,29 @@ int tracer_f_new_cmd(lua_State *L)
 	{
 		params.type = SUBDIVISION;
 	}
+	else if (isstr[0] == 'o')
+	{
+		int depth = 5;
+		int size = 10;
+		const char *str_depth = strchr(isstr, 'd');
+		const char *str_size = strchr(isstr, 's');
+		if (str_depth)
+			depth = atoi(str_depth+1);
+		if (str_size)
+			size = atoi(str_size+1);
+		params.type = OCTTREE;
+		params.max_depth = depth;
+		params.ideal_size = size;
+	}
 	else
 		luaL_argcheck(L, false, 2, "Invalid intersection strategy");
 
-	IntersectionStrategy *is = get_strategy(params);
-	if (!is)
-		luaL_argcheck(L, false, 2, "Failed to generate strategy");
-
 	Scene *scene = new Scene();
 	Scene::make_scene(node->node, scene);
+
+	IntersectionStrategy *is = get_strategy(params, scene->get_object_count());
+	if (!is)
+		luaL_argcheck(L, false, 2, "Failed to generate strategy");
 
 	data->tracer = new RayTracer(scene, is);
 
@@ -897,6 +912,34 @@ int tracer_m_set_ambient_cmd(lua_State *L)
 }
 
 extern "C"
+int tracer_m_set_background_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	tracer_ud *me = (tracer_ud*)luaL_checkudata(L, 1, TRACER_META);
+	luaL_argcheck(L, me != 0, 1, "Ray-Tracer expected");
+
+	color_ud *map = (color_ud*)luaL_checkudata(L, 2, COLOR_META);
+	luaL_argcheck(L, map != 0, 2, "Color expected");
+
+	me->tracer->set_background(map->color);
+	return 0;
+}
+
+extern "C"
+int tracer_m_set_shadow_samples_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	tracer_ud *me = (tracer_ud*)luaL_checkudata(L, 1, TRACER_META);
+	luaL_argcheck(L, me != 0, 1, "Ray-Tracer expected");
+
+	int shadow_samples = luaL_checkinteger(L, 2);
+	me->tracer->set_light_samples(shadow_samples);
+	return 0;
+}
+
+extern "C"
 int tracer_m_render_cmd(lua_State *L)
 {
 	GRLUA_DEBUG_CALL;
@@ -924,8 +967,10 @@ static const luaL_reg tracerlib_functions[] = {
 
 static const luaL_reg tracerlib_methods[] = {
 	{"__gc",		tracer_m_gc_cmd},
+	{"set_shadow_samples",	tracer_m_set_shadow_samples_cmd},
 	{"set_threads",		tracer_m_set_threads_cmd},
 	{"set_ambient",		tracer_m_set_ambient_cmd},
+	{"set_background",	tracer_m_set_background_cmd},
 	{"render",		tracer_m_render_cmd},
 	{0, 0}
 };
@@ -1006,6 +1051,19 @@ get_texture_map(lua_State *L)
 }
 
 extern "C"
+int color_m_bump_cmd(lua_State *L)
+{
+	GRLUA_DEBUG_CALL;
+
+	double mag;
+	TextureColorMap *c = get_texture_map(L);
+	mag = luaL_checknumber(L,2);
+
+	c->set_bump_magnitude(mag);
+	return 0;
+}
+
+extern "C"
 int color_m_translate_cmd(lua_State *L)
 {
 	GRLUA_DEBUG_CALL;
@@ -1057,6 +1115,7 @@ static const luaL_reg colorlib_functions[] = {
 
 static const luaL_reg colorlib_methods[] = {
 	{"__gc",		color_m_gc_cmd},
+	{"bump_magnitude",	color_m_bump_cmd},
 	{"translate",		color_m_translate_cmd},
 	{"scale",		color_m_scale_cmd},
 	{"rotate",		color_m_rotate_cmd},

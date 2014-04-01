@@ -8,13 +8,26 @@
 #include "intersection.hpp"
 
 
-IntersectionStrategy *get_strategy(const IntersectionStrategyParams &params)
+IntersectionStrategy *get_strategy(const IntersectionStrategyParams &params,
+		int object_count)
 {
 	if (params.type == BRUTE_FORCE)
 		return new BruteForceStrategy(params);
 	if (params.type == SUBDIVISION)
 	{
-		return new SpatialSubdivisionStrategy(params);
+		if (params.root)
+			return new SpatialSubdivisionStrategy(params);
+		else
+			return new BruteForceStrategy(params);
+	}
+
+	if (params.type == OCTTREE)
+	{
+		if (object_count > params.ideal_size &&
+				(params.root || params.max_depth > 0))
+			return new SpatialSubdivisionStrategy(params);
+		else
+			return new BruteForceStrategy(params);
 	}
 
 	return 0;
@@ -196,6 +209,8 @@ SpatialSubdivisionStrategy::SpatialSubdivisionStrategy(
 	m_nx(1), m_ny(1), m_nz(1),
 	m_grid(0)
 {
+	if (params.type == OCTTREE && !params.root)
+		m_bounds = params.bounds;
 }
 
 SpatialSubdivisionStrategy::~SpatialSubdivisionStrategy()
@@ -351,7 +366,8 @@ SpatialSubdivisionStrategy::finish()
 		Bounds b;
 		m_all_objects[i]->get_bounds(b);
 		bounds.push_back(b);
-		m_bounds.merge(b);
+		if (m_params.type != OCTTREE || m_params.root)
+			m_bounds.merge(b);
 	}
 
 	if (m_bounds.get_type() == UNSET)
@@ -391,7 +407,29 @@ SpatialSubdivisionStrategy::finish()
 				for (int z = zi; z < zf; ++z)
 				{
 					if (!m_grid[x][y][z])
-						m_grid[x][y][z] = new BruteForceStrategy(m_params);
+					{
+						IntersectionStrategyParams p = m_params;
+						if (m_params.type == OCTTREE)
+						{
+							p.bounds.set_box(Point3D(
+								m_bounds.get_left()+(x+0)*m_xs/m_nx,
+								m_bounds.get_bottom()+(y+0)*m_ys/m_ny,
+								m_bounds.get_front()+(z+0)*m_zs/m_nz),
+								Point3D(
+								m_bounds.get_left()+(x+1)*m_xs/m_nx,
+								m_bounds.get_bottom()+(y+1)*m_ys/m_ny,
+								m_bounds.get_front()+(z+1)*m_zs/m_nz));
+						}
+						p.max_depth -= 1;
+						p.root = false;
+						if (m_params.type != OCTTREE ||
+								m_nx > 1)
+							m_grid[x][y][z] = get_strategy(p,
+									m_all_objects.size());
+						else
+							m_grid[x][y][z] = new
+								BruteForceStrategy(p);
+					}
 
 					m_grid[x][y][z]->add_object(m_all_objects[i]);
 				}
@@ -426,26 +464,37 @@ SpatialSubdivisionStrategy::setup_grid()
 	if (m_ys == 0) ys = m_ys = 0.1;
 	if (m_zs == 0) zs = m_zs = 0.1;
 
-	// TODO - find some optimal value for this... (for the cow a multiple speeds it up by up to 4x)
-	const int desired_divisions = (int) ceil(sqrt((double)m_all_objects.size()))*100;
-//	const int desired_divisions = m_all_objects.size()*100;
-
-	while (m_nx*m_ny*m_nz < desired_divisions)
+	if (m_params.type == OCTTREE)
 	{
-		if (xs >= ys && xs >= zs)
+		if (m_all_objects.size() > m_params.ideal_size)
 		{
-			m_nx += 1;
-			xs = m_xs/m_nx;
+			m_nx = 2;
+			m_ny = 2;
+			m_nz = 2;
 		}
-		else if (zs >= ys)
+	}
+	else
+	{
+		const int desired_divisions = (int) ceil(sqrt((double)m_all_objects.size()))*100;
+	//	const int desired_divisions = m_all_objects.size()*100;
+
+		while (m_nx*m_ny*m_nz < desired_divisions)
 		{
-			m_nz += 1;
-			zs = m_zs/m_nz;
-		}
-		else
-		{
-			m_ny += 1;
-			ys = m_ys/m_ny;
+			if (xs >= ys && xs >= zs)
+			{
+				m_nx += 1;
+				xs = m_xs/m_nx;
+			}
+			else if (zs >= ys)
+			{
+				m_nz += 1;
+				zs = m_zs/m_nz;
+			}
+			else
+			{
+				m_ny += 1;
+				ys = m_ys/m_ny;
+			}
 		}
 	}
 

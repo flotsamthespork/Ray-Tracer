@@ -44,6 +44,7 @@ private:
 	pthread_mutex_t m_px_lock;
 	const int m_last_px;
 	volatile int m_next_px;
+	volatile int m_last_progress;
 	std::vector<RayTracerJob*> m_jobs;
 public:
 	JobFactory(RayTracer *rt,

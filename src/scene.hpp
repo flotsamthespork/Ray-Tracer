@@ -206,6 +206,7 @@ public:
 
 	Camera *get_camera(const int cam_id);
 
+	int get_object_count();
 	int get_light_count();
 	Light *get_light(int i);
 

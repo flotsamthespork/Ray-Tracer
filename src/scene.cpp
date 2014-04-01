@@ -370,6 +370,12 @@ Scene::set_light_samples(int ss_samples)
 }
 
 int
+Scene::get_object_count()
+{
+	return m_objects.size();
+}
+
+int
 Scene::get_light_count()
 {
 	return m_lights.size();
